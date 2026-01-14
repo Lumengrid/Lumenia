@@ -1,0 +1,20 @@
+{
+  "Group": "Lumengrid",
+  "Name": "Lumenia",
+  "Version": "1.0.3",
+  "Description": "Lumenia mod contains a lot of QOL additions",
+  "Authors": [
+    {
+      "Name": "lumengrid"
+    }
+  ],
+  "Website": "website",
+  "ServerVersion": "*",
+  "Dependencies": {
+    "Hytale:EntityModule": "*"
+  },
+  "OptionalDependencies": {},
+  "DisabledByDefault": false,
+  "Main": "com.lumengrid.lumenia.Main",
+  "IncludesAssetPack": true
+}

@@ -1,0 +1,20 @@
+Group {
+  LayoutMode: Top;
+  Padding: (Right: 5);
+  Anchor: (Width: 64, Height: 80);
+
+  ItemIcon #ItemIcon {
+    Anchor: (Width: 64, Height: 64);
+    Visible: true;
+  }
+
+  Label #Quantity {
+    Anchor: (Top: 64, Width: 64);
+    Style: (
+      FontSize: 12,
+      TextColor: #ffffff,
+      RenderBold: true,
+      HorizontalAlignment: Center
+    );
+  }
+}
