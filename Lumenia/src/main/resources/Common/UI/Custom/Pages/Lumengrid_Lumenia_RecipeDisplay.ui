@@ -1,0 +1,90 @@
+$C = "../Common.ui";
+
+Group {
+  LayoutMode: Top;
+  Padding: (Full: 6, Bottom: 8);
+  Background: (Color: #1a1a1a(0.7));
+
+  Label #RecipeTitle {
+    Style: (
+      FontSize: 15,
+      RenderBold: true,
+      TextColor: #ffffff
+    );
+    Background: (Color: #2a2a2a(0.5));
+    Padding: (Full: 8, Bottom: 10);
+  }
+
+  Group #RecipeContentContainer {
+    LayoutMode: Top;
+    Anchor: (Height: 350);
+
+    Group #RecipeContent {
+      LayoutMode: Top;
+      Padding: (Top: 4);
+
+      Group #BenchInfo {
+        LayoutMode: Left;
+        Padding: (Full: 6, Bottom: 8);
+        Background: (Color: #2a2a2a(0.9));
+
+        ItemIcon #BenchIcon {
+          Anchor: (Width: 48, Height: 48);
+          Visible: true;
+        }
+
+        Group {
+          LayoutMode: Top;
+          Padding: (Left: 8);
+          FlexWeight: 1;
+
+          Label #BenchText {
+            Style: (
+              FontSize: 14,
+              TextColor: #ffffff,
+              RenderBold: true
+            );
+            Padding: (Bottom: 2);
+          }
+
+          Label #BenchId {
+            Style: (
+              FontSize: 11,
+              TextColor: #aaaaaa
+            );
+          }
+        }
+      }
+
+      Label #InputLabel {
+        Style: (
+          FontSize: 13,
+          TextColor: #ffffff,
+          RenderBold: true
+        );
+        Text: "Inputs:";
+        Padding: (Top: 4, Bottom: 2);
+      }
+
+      Group #InputGrid {
+        LayoutMode: Top;
+        Padding: (Top: 2);
+      }
+
+      Label #OutputLabel {
+        Style: (
+          FontSize: 13,
+          TextColor: #00ff00,
+          RenderBold: true
+        );
+        Text: "Outputs:";
+        Padding: (Top: 6, Bottom: 2);
+      }
+
+      Group #OutputGrid {
+        LayoutMode: Top;
+        Padding: (Top: 2);
+      }
+    }
+  }
+}

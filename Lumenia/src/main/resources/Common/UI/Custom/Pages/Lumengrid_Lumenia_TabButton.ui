@@ -1,0 +1,31 @@
+$C = "../Common.ui";
+
+Button {
+  LayoutMode: Left;
+  Anchor: (Width: 160, Height: 50);
+  Background: (Color: #1a1a1a(0.6));
+  Padding: (Full: 6);
+  Style: (
+    Hovered: (Background: #2a2a2a(0.8)),
+    Pressed: (Background: #3a3a3a(0.9))
+  );
+
+  ItemIcon #BenchIcon {
+    Anchor: (Width: 32, Height: 32);
+    Visible: true;
+  }
+
+  Group {
+    LayoutMode: Top;
+    Padding: (Left: 6);
+    FlexWeight: 1;
+
+    Label #TabButton {
+      Style: (
+        FontSize: 12,
+        TextColor: #ffffff,
+        RenderBold: true
+      );
+    }
+  }
+}

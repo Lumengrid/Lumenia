@@ -1,0 +1,51 @@
+Group {
+  LayoutMode: Top;
+  Padding: (Full: 4, Bottom: 6, Right: 8);
+  Background: (Color: #252525(0.5));
+
+  Group {
+    LayoutMode: Left;
+    Anchor: (Height: 44);
+
+    ItemIcon #ItemIcon {
+      Anchor: (Width: 48, Height: 48);
+      Visible: true;
+    }
+
+    Group {
+      LayoutMode: Top;
+      Padding: (Left: 8);
+      FlexWeight: 1;
+
+      Group {
+        LayoutMode: Left;
+        Anchor: (Height: 22);
+
+        Label #ItemName {
+          Style: (
+            FontSize: 14,
+            TextColor: #ffffff,
+            RenderBold: true
+          );
+          Padding: (Right: 8);
+        }
+
+        Label #Quantity {
+          Style: (
+            FontSize: 14,
+            TextColor: #4a9eff,
+            RenderBold: true
+          );
+        }
+      }
+
+      Label #ItemId {
+        Style: (
+          FontSize: 11,
+          TextColor: #aaaaaa
+        );
+        Padding: (Top: 2);
+      }
+    }
+  }
+}

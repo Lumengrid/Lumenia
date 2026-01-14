@@ -1,0 +1,259 @@
+$C = "../Common.ui";
+
+$C.@PageOverlay {
+
+  $C.@Container {
+    Anchor: (Width: 1200, Height: 700);
+
+    #Title {
+      Group {
+        $C.@Title {
+          @Text = "Lumenia JEI";
+        }
+
+        $C.@HeaderSearch {}
+      }
+    }
+
+    #Content {
+      LayoutMode: Left;
+
+      Group #ItemGridSection {
+        FlexWeight: 2;
+        LayoutMode: Top;
+        Padding: (Left: 10);
+
+        Group #ItemGridContainer {
+          FlexWeight: 1;
+          LayoutMode: TopScrolling;
+          ScrollbarStyle: $C.@DefaultScrollbarStyle;
+
+          Group #ItemGrid {
+            LayoutMode: Top;
+          }
+        }
+
+        Group #PaginationControls {
+          LayoutMode: Left;
+          Padding: (Top: 10, Bottom: 10);
+          Anchor: (Height: 40);
+
+          TextButton #PrevPageButton {
+            Anchor: (Width: 100, Height: 35);
+            Text: "Prev";
+            Style: TextButtonStyle(
+              Default: (LabelStyle: (FontSize: 14, TextColor: #ffffff, RenderBold: true)),
+              Hovered: (Background: #2a2a2a(0.8)),
+              Pressed: (Background: #3a3a3a(0.9)),
+              Sounds: $C.@ButtonSounds
+            );
+            Background: #1a1a1a(0.6);
+            Padding: (Full: 8);
+          }
+
+          Label #PaginationInfo {
+            FlexWeight: 1;
+            Text: "1 of 1";
+            Style: (
+              FontSize: 14,
+              TextColor: #aaaaaa,
+              HorizontalAlignment: Center
+            );
+            Background: #1a1a1a(0.3);
+            Padding: (Full: 8);
+            Anchor: (Left: 5, Right: 5);
+          }
+
+          TextButton #NextPageButton {
+            Anchor: (Width: 100, Height: 35);
+            Text: "Next";
+            Style: TextButtonStyle(
+              Default: (LabelStyle: (FontSize: 14, TextColor: #ffffff, RenderBold: true)),
+              Hovered: (Background: #2a2a2a(0.8)),
+              Pressed: (Background: #3a3a3a(0.9)),
+              Sounds: $C.@ButtonSounds
+            );
+            Background: #1a1a1a(0.6);
+            Padding: (Full: 8);
+          }
+        }
+      }
+
+      Group #RecipeSection {
+        FlexWeight: 1;
+        LayoutMode: Top;
+        Padding: (Left: 10);
+
+        Group #RecipePanel {
+          Visible: true;
+          LayoutMode: Top;
+          Anchor: (Height: 750);
+
+          Group #ItemInfo {
+            LayoutMode: Top;
+            Padding: (Full: 10, Bottom: 20);
+            Background: (Color: #1a1a1a(0.6));
+
+            Group {
+              LayoutMode: Left;
+              Padding: (Bottom: 5);
+
+              ItemIcon #ItemIcon {
+                Anchor: (Width: 48, Height: 48);
+                Visible: true;
+              }
+
+              Group {
+                LayoutMode: Top;
+                Padding: (Left: 10);
+
+                Label #ItemName {
+                  Style: (
+                    FontSize: 18,
+                    RenderBold: true,
+                    TextColor: #ffffff
+                  );
+                }
+
+                Label #ItemId {
+                  Style: (
+                    FontSize: 12,
+                    TextColor: #888888
+                  );
+                }
+              }
+            }
+
+            Group #ItemProperties {
+              LayoutMode: Top;
+              Padding: (Top: 5);
+            }
+          }
+
+          Group #SectionButtons {
+            LayoutMode: Left;
+            Padding: (Top: 10, Bottom: 10);
+            Anchor: (Height: 50);
+
+            TextButton #HowToCraftButton {
+              Anchor: (Width: 150, Height: 40);
+              Text: "How to Craft";
+              Style: TextButtonStyle(
+                Default: (LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true)),
+                Hovered: (Background: #2a2a2a(0.8)),
+                Pressed: (Background: #3a3a3a(0.9)),
+                Sounds: $C.@ButtonSounds
+              );
+              Background: #1a1a1a(0.6);
+              Padding: (Full: 8);
+            }
+
+            TextButton #UsedInButton {
+              Anchor: (Width: 150, Height: 40, Left: 10);
+              Text: "Used In";
+              Style: TextButtonStyle(
+                Default: (LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true)),
+                Hovered: (Background: #2a2a2a(0.8)),
+                Pressed: (Background: #3a3a3a(0.9)),
+                Sounds: $C.@ButtonSounds
+              );
+              Background: #1a1a1a(0.6);
+              Padding: (Full: 8);
+            }
+          }
+
+          Group #PaginationControls {
+            LayoutMode: Left;
+            Padding: (Top: 10, Bottom: 15);
+            Anchor: (Height: 50);
+            Visible: false;
+
+            TextButton #PrevPageButton {
+              Anchor: (Width: 120, Height: 40);
+              Text: "Previous";
+              Style: TextButtonStyle(
+                Default: (LabelStyle: (FontSize: 14, TextColor: #ffffff, RenderBold: true)),
+                Hovered: (Background: #2a2a2a(0.8)),
+                Pressed: (Background: #3a3a3a(0.9)),
+                Sounds: $C.@ButtonSounds
+              );
+              Background: #1a1a1a(0.6);
+              Padding: (Full: 8);
+            }
+
+            Label #PaginationInfo {
+              FlexWeight: 1;
+              Text: "1 of 1";
+              Style: (
+                FontSize: 15,
+                TextColor: #ffffff,
+                HorizontalAlignment: Center,
+                RenderBold: true
+              );
+              Background: #2a2a2a(0.6);
+              Padding: (Full: 10);
+              Anchor: (Left: 10, Right: 10);
+            }
+
+            TextButton #NextPageButton {
+              Anchor: (Width: 120, Height: 40);
+              Text: "Next";
+              Style: TextButtonStyle(
+                Default: (LabelStyle: (FontSize: 14, TextColor: #ffffff, RenderBold: true)),
+                Hovered: (Background: #2a2a2a(0.8)),
+                Pressed: (Background: #3a3a3a(0.9)),
+                Sounds: $C.@ButtonSounds
+              );
+              Background: #1a1a1a(0.6);
+              Padding: (Full: 8);
+            }
+          }
+
+          Group #CraftSection {
+            Visible: true;
+            LayoutMode: Top;
+            FlexWeight: 1;
+
+            Label #NoRecipes {
+              Visible: false;
+              Style: (
+                FontSize: 13,
+                TextColor: #888888
+              );
+              Padding: (Top: 20);
+            }
+
+            Group #CraftList {
+              LayoutMode: TopScrolling;
+              ScrollbarStyle: $C.@DefaultScrollbarStyle;
+              FlexWeight: 1;
+            }
+          }
+
+          Group #UsageSection {
+            Visible: false;
+            LayoutMode: Top;
+            FlexWeight: 1;
+
+            Label #NoUsageRecipes {
+              Visible: false;
+              Style: (
+                FontSize: 13,
+                TextColor: #888888
+              );
+              Padding: (Top: 20);
+            }
+
+            Group #UsageList {
+              LayoutMode: TopScrolling;
+              ScrollbarStyle: $C.@DefaultScrollbarStyle;
+              FlexWeight: 1;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+$C.@BackButton {}
