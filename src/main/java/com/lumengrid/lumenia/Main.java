@@ -8,9 +8,7 @@ import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.inventory.MaterialQuantity;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
-import com.hypixel.hytale.server.core.util.Config;
 import com.lumengrid.lumenia.commands.OpenJEICommand;
-import com.lumengrid.lumenia.config.LumeniaConfig;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
 import java.util.*;
@@ -21,20 +19,14 @@ public class Main extends JavaPlugin {
     public static Map<String, CraftingRecipe> RECIPES = new HashMap<>();
     public static Map<String, List<String>> ITEM_TO_RECIPES = new HashMap<>(); // Item ID -> Recipe IDs that produce it
     public static Map<String, List<String>> ITEM_FROM_RECIPES = new HashMap<>(); // Item ID -> Recipe IDs that use it as input
-    
-    public static Config<LumeniaConfig> CONFIG;
 
     public Main(@NonNullDecl JavaPluginInit init) {
         super(init);
-        CONFIG = this.withConfig("Lumenia", LumeniaConfig.CODEC);
     }
 
     @Override
     protected void setup() {
         super.setup();
-        
-        // Load and save config
-        CONFIG.save();
 
         // Register event listeners for items and recipes
         this.getEventRegistry().register(LoadedAssetsEvent.class, Item.class, Main::onItemAssetLoad);
