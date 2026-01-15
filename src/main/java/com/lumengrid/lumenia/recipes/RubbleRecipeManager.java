@@ -10,6 +10,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -83,7 +84,7 @@ public class RubbleRecipeManager {
             return false;
         }
 
-        return createRubbleRecipes(itemId, rubbleItemId, family);
+        return createRubbleRecipes(item, itemId, rubbleItemId, family);
     }
     
     /**
@@ -105,7 +106,11 @@ public class RubbleRecipeManager {
             return false;
         }
 
-        return createRubbleRecipes(rockItemId, itemId, family);
+        Item rockItem = Main.ITEMS.get(rockItemId);
+        if (rockItem == null) {
+            return false;
+        }
+        return createRubbleRecipes(item, rockItemId, itemId, family);
     }
     
     /**
@@ -176,12 +181,16 @@ public class RubbleRecipeManager {
     
     /**
      * Create both recipes: stone -> rubble and rubble -> stone
+     * @param item The item being processed (either stone or rubble)
+     * @param stoneItemId The stone item ID
+     * @param rubbleItemId The rubble item ID
+     * @param material The material family name
      * @return true if any new recipes were created, false otherwise
      */
-    private static boolean createRubbleRecipes(String stoneItemId, String rubbleItemId, String material) {
+    private static boolean createRubbleRecipes(Item item, String stoneItemId, String rubbleItemId, String material) {
         logInfo("Creating rubble recipes for: " + stoneItemId + " <-> " + rubbleItemId + " (family: " + material + ")");
         
-        boolean createdAny = false;
+        List<CraftingRecipe> recipesToRegister = new ArrayList<>();
         
         // Recipe 1: 1 stone = 4 rubble (crafted in hand)
         String recipeId1 = "lumenia_rubble_from_stone_" + material.toLowerCase();
@@ -199,53 +208,53 @@ public class RubbleRecipeManager {
                     recipeId1,
                     Arrays.asList(input1),
                     Arrays.asList(output1),
-                    null // No bench requirement (pocket crafting)
+                    null
                 );
                 
                 if (recipe1 != null) {
                     Main.RECIPES.put(recipeId1, recipe1);
                     Main.ITEM_TO_RECIPES.computeIfAbsent(rubbleItemId, k -> new ArrayList<>()).add(recipeId1);
                     Main.ITEM_FROM_RECIPES.computeIfAbsent(stoneItemId, k -> new ArrayList<>()).add(recipeId1);
+                    recipesToRegister.add(recipe1);
                     logInfo("Successfully created recipe: " + recipeId1);
-                    createdAny = true;
                 } else {
                     logError("Failed to create CraftingRecipe: " + recipeId1, null);
                 }
             }
         }
 
-        // Recipe 2: 4 rubble = 1 stone (crafted in hand)
-        String recipeId2 = "lumenia_stone_from_rubble_" + material.toLowerCase();
-        if (Main.RECIPES.containsKey(recipeId2)) {
-            logInfo("Recipe already exists: " + recipeId2);
-        } else {
-            logInfo("Creating recipe: " + recipeId2 + " (4x " + rubbleItemId + " -> 1x " + stoneItemId + ")");
-            MaterialQuantity input2 = createMaterialQuantity(rubbleItemId, 4);
-            MaterialQuantity output2 = createMaterialQuantity(stoneItemId, 1);
-            
-            if (input2 == null || output2 == null) {
-                logError("Failed to create MaterialQuantity for recipe " + recipeId2, null);
-            } else {
-                CraftingRecipe recipe2 = createRecipe(
-                    recipeId2,
-                    Arrays.asList(input2),
-                    Arrays.asList(output2),
-                    null // No bench requirement (pocket crafting)
-                );
+        if (!recipesToRegister.isEmpty()) {
+            try {
+                Method collectMethod = Item.class.getMethod("collectRecipesToGenerate", Collection.class);
                 
-                if (recipe2 != null) {
-                    Main.RECIPES.put(recipeId2, recipe2);
-                    Main.ITEM_TO_RECIPES.computeIfAbsent(stoneItemId, k -> new ArrayList<>()).add(recipeId2);
-                    Main.ITEM_FROM_RECIPES.computeIfAbsent(rubbleItemId, k -> new ArrayList<>()).add(recipeId2);
-                    logInfo("Successfully created recipe: " + recipeId2);
-                    createdAny = true;
-                } else {
-                    logError("Failed to create CraftingRecipe: " + recipeId2, null);
+                // Register with the item being processed
+                if (item != null) {
+                    collectMethod.invoke(item, recipesToRegister);
+                    logInfo("Registered " + recipesToRegister.size() + " recipes with item");
                 }
+                
+                // Also register with the other item (stone or rubble) if it exists
+                Item stoneItem = Main.ITEMS.get(stoneItemId);
+                Item rubbleItem = Main.ITEMS.get(rubbleItemId);
+                
+                if (stoneItem != null && stoneItem != item) {
+                    collectMethod.invoke(stoneItem, recipesToRegister);
+                    logInfo("Registered " + recipesToRegister.size() + " recipes with stone item");
+                }
+                
+                if (rubbleItem != null && rubbleItem != item) {
+                    collectMethod.invoke(rubbleItem, recipesToRegister);
+                    logInfo("Registered " + recipesToRegister.size() + " recipes with rubble item");
+                }
+            } catch (NoSuchMethodException e) {
+                // Method doesn't exist - recipes are already in RECIPES map, so this is optional
+                logWarning("collectRecipesToGenerate method not found on Item class");
+            } catch (Exception e) {
+                logError("Failed to register recipes with item", e);
             }
         }
         
-        return createdAny;
+        return !recipesToRegister.isEmpty();
     }
     
     /**

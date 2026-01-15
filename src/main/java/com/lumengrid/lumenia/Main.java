@@ -48,32 +48,22 @@ public class Main extends JavaPlugin {
 
     private static void onItemAssetLoad(LoadedAssetsEvent<String, Item, DefaultAssetMap<String, Item>> event) {
         ITEMS = event.getAssetMap().getAssetMap();
+
+
         boolean anyRecipesCreated = false;
         
         for (var entry : event.getLoadedAssets().entrySet()) {
             String itemId = entry.getKey();
             Item item = entry.getValue();
-            if (RubbleRecipeManager.processStoneItem(itemId, item)) {
-                anyRecipesCreated = true;
-            }
-            if (RubbleRecipeManager.processRubbleItem(itemId, item)) {
-                anyRecipesCreated = true;
-            }
+            RubbleRecipeManager.processStoneItem(itemId, item);
+            RubbleRecipeManager.processRubbleItem(itemId, item);
         }
 
         for (var entry : ITEMS.entrySet()) {
             String itemId = entry.getKey();
             Item item = entry.getValue();
-            if (RubbleRecipeManager.processStoneItem(itemId, item)) {
-                anyRecipesCreated = true;
-            }
-            if (RubbleRecipeManager.processRubbleItem(itemId, item)) {
-                anyRecipesCreated = true;
-            }
-        }
-
-        if (anyRecipesCreated && instance != null) {
-
+            RubbleRecipeManager.processStoneItem(itemId, item);
+            RubbleRecipeManager.processRubbleItem(itemId, item);
         }
     }
 
