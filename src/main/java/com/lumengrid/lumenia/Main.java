@@ -11,6 +11,7 @@ import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.util.Config;
 import com.lumengrid.lumenia.commands.OpenJEICommand;
 import com.lumengrid.lumenia.config.LumeniaConfig;
+import com.lumengrid.lumenia.recipes.RubbleRecipeManager;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
 import java.util.*;
@@ -23,6 +24,7 @@ public class Main extends JavaPlugin {
     public static Map<String, List<String>> ITEM_FROM_RECIPES = new HashMap<>(); // Item ID -> Recipe IDs that use it as input
     
     public static Config<LumeniaConfig> CONFIG;
+    private static Main instance;
 
     public Main(@NonNullDecl JavaPluginInit init) {
         super(init);
@@ -33,20 +35,46 @@ public class Main extends JavaPlugin {
     protected void setup() {
         super.setup();
         
-        // Load and save config
+        instance = this;
         CONFIG.save();
 
-        // Register event listeners for items and recipes
+        RubbleRecipeManager.setLogger(this.getLogger());
         this.getEventRegistry().register(LoadedAssetsEvent.class, Item.class, Main::onItemAssetLoad);
         this.getEventRegistry().register(LoadedAssetsEvent.class, CraftingRecipe.class, Main::onRecipeLoad);
         this.getEventRegistry().register(RemovedAssetsEvent.class, CraftingRecipe.class, Main::onRecipeRemove);
 
-        // Register commands
         this.getCommandRegistry().registerCommand(new OpenJEICommand());
     }
 
     private static void onItemAssetLoad(LoadedAssetsEvent<String, Item, DefaultAssetMap<String, Item>> event) {
         ITEMS = event.getAssetMap().getAssetMap();
+        boolean anyRecipesCreated = false;
+        
+        for (var entry : event.getLoadedAssets().entrySet()) {
+            String itemId = entry.getKey();
+            Item item = entry.getValue();
+            if (RubbleRecipeManager.processStoneItem(itemId, item)) {
+                anyRecipesCreated = true;
+            }
+            if (RubbleRecipeManager.processRubbleItem(itemId, item)) {
+                anyRecipesCreated = true;
+            }
+        }
+
+        for (var entry : ITEMS.entrySet()) {
+            String itemId = entry.getKey();
+            Item item = entry.getValue();
+            if (RubbleRecipeManager.processStoneItem(itemId, item)) {
+                anyRecipesCreated = true;
+            }
+            if (RubbleRecipeManager.processRubbleItem(itemId, item)) {
+                anyRecipesCreated = true;
+            }
+        }
+
+        if (anyRecipesCreated && instance != null) {
+
+        }
     }
 
     private static void onRecipeLoad(LoadedAssetsEvent<String, CraftingRecipe, DefaultAssetMap<String, CraftingRecipe>> event) {
@@ -97,9 +125,9 @@ public class Main extends JavaPlugin {
                                     }
                                 }
                             }
-                        } else if (inputsObj instanceof java.util.Collection) {
+                        } else if (inputsObj instanceof Collection) {
                             @SuppressWarnings("unchecked")
-                            java.util.Collection<MaterialQuantity> inputs = (java.util.Collection<MaterialQuantity>) inputsObj;
+                            Collection<MaterialQuantity> inputs = (Collection<MaterialQuantity>) inputsObj;
                             if (inputs != null && !inputs.isEmpty()) {
                                 for (MaterialQuantity input : inputs) {
                                     if (input != null && input.getItemId() != null) {
@@ -139,9 +167,9 @@ public class Main extends JavaPlugin {
                                         }
                                     }
                                 }
-                            } else if (inputsObj instanceof java.util.Collection) {
+                            } else if (inputsObj instanceof Collection) {
                                 @SuppressWarnings("unchecked")
-                                java.util.Collection<MaterialQuantity> inputs = (java.util.Collection<MaterialQuantity>) inputsObj;
+                                Collection<MaterialQuantity> inputs = (Collection<MaterialQuantity>) inputsObj;
                                 if (inputs != null && !inputs.isEmpty()) {
                                     for (MaterialQuantity input : inputs) {
                                         if (input != null && input.getItemId() != null) {
@@ -195,9 +223,9 @@ public class Main extends JavaPlugin {
                                     recipes.remove(recipeId);
                                 }
                             }
-                        } else if (inputsObj instanceof java.util.Collection) {
+                        } else if (inputsObj instanceof Collection) {
                             @SuppressWarnings("unchecked")
-                            java.util.Collection<MaterialQuantity> inputs = (java.util.Collection<MaterialQuantity>) inputsObj;
+                            Collection<MaterialQuantity> inputs = (Collection<MaterialQuantity>) inputsObj;
                             for (MaterialQuantity input : inputs) {
                                 List<String> recipes = ITEM_FROM_RECIPES.get(input.getItemId());
                                 if (recipes != null) {

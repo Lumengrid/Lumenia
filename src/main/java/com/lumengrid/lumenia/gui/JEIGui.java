@@ -8,14 +8,14 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.BenchRequirement;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
-import com.hypixel.hytale.server.core.asset.type.item.config.CraftingRecipe;
-import com.hypixel.hytale.server.core.inventory.MaterialQuantity;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.item.config.CraftingRecipe;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.command.system.MatchResult;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
+import com.hypixel.hytale.server.core.inventory.MaterialQuantity;
 import com.hypixel.hytale.server.core.modules.i18n.I18nModule;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -29,7 +29,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import javax.annotation.Nonnull;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.List;
 
 /**
  * JEI-like GUI for browsing items and viewing recipes
@@ -870,23 +869,32 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         // Build bench info (icon + name + id + tier)
         if (recipe.getBenchRequirement() != null && recipe.getBenchRequirement().length > 0) {
             BenchRequirement bench = recipe.getBenchRequirement()[0];
-            String benchName = formatBench(bench.id);
-            commandBuilder.set(contentSelector + " #BenchInfo.Visible", true);
-            commandBuilder.set(contentSelector + " #BenchInfo #BenchText.Text", benchName + " Tier " + bench.requiredTierLevel);
-            commandBuilder.set(contentSelector + " #BenchInfo #BenchId.Text", "ID: " + bench.id);
-
-            // Set bench icon
-            String benchItemId = findBenchItemId(bench.id);
-            if (benchItemId != null && Main.ITEMS.containsKey(benchItemId)) {
-                commandBuilder.set(contentSelector + " #BenchInfo #BenchIcon.ItemId", "");
-                commandBuilder.set(contentSelector + " #BenchInfo #BenchIcon.ItemId", benchItemId);
-                commandBuilder.set(contentSelector + " #BenchInfo #BenchIcon.Visible", true);
-            } else {
+            
+            // Check if bench requirement is "Fieldcraft" - show as "Pocket crafting"
+            if ("Fieldcraft".equals(bench.id)) {
+                commandBuilder.set(contentSelector + " #BenchInfo.Visible", true);
+                commandBuilder.set(contentSelector + " #BenchInfo #BenchText.Text", "Pocket crafting");
+                commandBuilder.set(contentSelector + " #BenchInfo #BenchId.Text", "");
                 commandBuilder.set(contentSelector + " #BenchInfo #BenchIcon.Visible", false);
+            } else {
+                String benchName = formatBench(bench.id);
+                commandBuilder.set(contentSelector + " #BenchInfo.Visible", true);
+                commandBuilder.set(contentSelector + " #BenchInfo #BenchText.Text", benchName + " Tier " + bench.requiredTierLevel);
+                commandBuilder.set(contentSelector + " #BenchInfo #BenchId.Text", "ID: " + bench.id);
+
+                // Set bench icon
+                String benchItemId = findBenchItemId(bench.id);
+                if (benchItemId != null && Main.ITEMS.containsKey(benchItemId)) {
+                    commandBuilder.set(contentSelector + " #BenchInfo #BenchIcon.ItemId", "");
+                    commandBuilder.set(contentSelector + " #BenchInfo #BenchIcon.ItemId", benchItemId);
+                    commandBuilder.set(contentSelector + " #BenchInfo #BenchIcon.Visible", true);
+                } else {
+                    commandBuilder.set(contentSelector + " #BenchInfo #BenchIcon.Visible", false);
+                }
             }
         } else {
             commandBuilder.set(contentSelector + " #BenchInfo.Visible", true);
-            commandBuilder.set(contentSelector + " #BenchInfo #BenchText.Text", "Crafted in: Hand");
+            commandBuilder.set(contentSelector + " #BenchInfo #BenchText.Text", "Pocket crafting");
             commandBuilder.set(contentSelector + " #BenchInfo #BenchId.Text", "");
             commandBuilder.set(contentSelector + " #BenchInfo #BenchIcon.Visible", false);
         }
@@ -1044,7 +1052,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         // Try to get resource type if item ID is null/empty
         if (itemId == null || itemId.isEmpty()) {
             try {
-                java.lang.reflect.Method getResourceTypeMethod = MaterialQuantity.class.getMethod("getResourceType");
+                Method getResourceTypeMethod = MaterialQuantity.class.getMethod("getResourceType");
                 Object resourceTypeObj = getResourceTypeMethod.invoke(input);
                 if (resourceTypeObj != null) {
                     resourceType = resourceTypeObj.toString();
@@ -1055,7 +1063,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                     String[] methodNames = {"getResourceTypeId", "getResourceTypeName", "getType"};
                     for (String methodName : methodNames) {
                         try {
-                            java.lang.reflect.Method method = MaterialQuantity.class.getMethod(methodName);
+                            Method method = MaterialQuantity.class.getMethod(methodName);
                             Object result = method.invoke(input);
                             if (result != null) {
                                 resourceType = result.toString();

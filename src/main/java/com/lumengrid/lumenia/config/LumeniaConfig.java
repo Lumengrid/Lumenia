@@ -12,7 +12,7 @@ public class LumeniaConfig {
                     (config, extraInfo) -> config.keyboardShortcut).add()
             .build();
 
-    private String keyboardShortcut = "R";
+    private String keyboardShortcut = "L";
 
     public LumeniaConfig() {
     }
