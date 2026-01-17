@@ -1,0 +1,19 @@
+Group {
+  LayoutMode: Left;
+  Anchor: (Height: 20);
+  
+  Label #MaxStackLabel {
+    Style: (
+      FontSize: 12,
+      TextColor: #aaaaaa
+    );
+    FlexWeight: 1;
+  }
+  
+  Label #OriginLabel {
+    Style: (
+      FontSize: 12,
+      TextColor: #aaaaaa
+    );
+  }
+}

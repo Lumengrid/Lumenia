@@ -1,0 +1,241 @@
+$C = "../Common.ui";
+
+Group #RecipePanel {
+  Visible: true;
+  LayoutMode: Top;
+  Anchor: (Height: 750);
+
+  Group #ItemInfo {
+    LayoutMode: Top;
+    Padding: (Full: 10, Bottom: 20);
+    Background: (Color: #1a1a1a(0.6));
+
+    Group #ItemHeader {
+      LayoutMode: Left;
+      Padding: (Bottom: 5);
+
+      Group {
+        LayoutMode: Left;
+        FlexWeight: 1;
+
+        ItemIcon #ItemIcon {
+          Anchor: (Width: 48, Height: 48);
+          Visible: true;
+        }
+
+        Group {
+          LayoutMode: Top;
+          Padding: (Left: 10);
+
+          Label #ItemName {
+            Style: (
+              FontSize: 18,
+              RenderBold: true,
+              TextColor: #ffffff
+            );
+          }
+
+          Label #ItemId {
+            Style: (
+              FontSize: 12,
+              TextColor: #888888
+            );
+          }
+        }
+      }
+    }
+
+    Group #ItemProperties {
+      LayoutMode: Top;
+      Padding: (Top: 5);
+    }
+  }
+
+  Group #SectionButtons {
+    LayoutMode: Left;
+    Padding: (Top: 10, Bottom: 10);
+    Anchor: (Height: 50);
+
+    TextButton #InfoButton {
+      Anchor: (Width: 112, Height: 40);
+      Text: "Info";
+      Style: TextButtonStyle(
+        Default: (LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center)),
+        Hovered: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center), Background: #3a3a3a(0.8)),
+        Pressed: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center), Background: #3a3a3a(0.9)),
+        Sounds: $C.@ButtonSounds
+      );
+      Background: #2a2a2a(0.6);
+      Padding: (Full: 8);
+    }
+
+    Group {
+      Anchor: (Width: 10);
+    }
+
+    TextButton #HowToCraftButton {
+      Anchor: (Width: 112, Height: 40);
+      Text: "How to Craft";
+      Style: TextButtonStyle(
+        Default: (LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center)),
+        Hovered: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center), Background: #3a3a3a(0.8)),
+        Pressed: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center), Background: #3a3a3a(0.9)),
+        Sounds: $C.@ButtonSounds
+      );
+      Background: #2a2a2a(0.6);
+      Padding: (Full: 8);
+    }
+
+    Group {
+      Anchor: (Width: 10);
+    }
+
+    TextButton #UsedInButton {
+      Anchor: (Width: 112, Height: 40);
+      Text: "Used In";
+      Style: TextButtonStyle(
+        Default: (LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center)),
+        Hovered: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center), Background: #3a3a3a(0.8)),
+        Pressed: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center), Background: #3a3a3a(0.9)),
+        Sounds: $C.@ButtonSounds
+      );
+      Background: #2a2a2a(0.6);
+      Padding: (Full: 8);
+    }
+  }
+
+  Group #InfoSection {
+    Visible: false;
+    LayoutMode: Top;
+    FlexWeight: 1;
+    Padding: (Top: 10);
+
+    Group {
+      LayoutMode: Left;
+      Padding: (Bottom: 5);
+      Anchor: (Height: 30);
+
+      Group {
+        FlexWeight: 1;
+      }
+
+      TextButton #GiveItemButton {
+        Anchor: (Width: 40, Height: 24);
+        Text: "Give";
+        Visible: false;
+        Style: TextButtonStyle(
+          Default: (LabelStyle: (FontSize: 14, TextColor: #ffffff, RenderBold: true)),
+          Hovered: (LabelStyle: (FontSize: 14, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center), Background: #2a7a2a(0.8)),
+          Pressed: (Background: #3a9a3a(0.9)),
+          Sounds: $C.@ButtonSounds
+        );
+        Background: #1a5a1a(0.6);
+        Padding: (Full: 3);
+      }
+    }
+
+    Group #ItemPropertiesInfo {
+      LayoutMode: Top;
+      Padding: (Top: 5);
+      Background: (Color: #1a1a1a(0.7));
+    }
+  }
+
+  Group #PaginationControls {
+    LayoutMode: Left;
+    Padding: (Top: 10, Bottom: 15);
+    Anchor: (Height: 50);
+    Visible: false;
+
+    TextButton #PrevPageButton {
+      Anchor: (Width: 70, Height: 35);
+      Text: "Prev";
+      Style: TextButtonStyle(
+        Default: (LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true)),
+        Hovered: (Background: #3a3a3a(0.9)),
+        Pressed: (Background: #4a4a4a(1.0)),
+        Sounds: $C.@ButtonSounds
+      );
+      Background: #2a2a2a(0.6);
+      Padding: (Full: 8);
+    }
+
+    Label #PaginationInfo {
+      FlexWeight: 1;
+      Text: "1 of 1";
+      Style: (
+        FontSize: 14,
+        TextColor: #ffffff,
+        HorizontalAlignment: Center,
+        VerticalAlignment: Center,
+      );
+      Background: #2a2a2a(0.6);
+      Padding: (Full: 8);
+      Anchor: (Left: 10, Right: 10);
+    }
+
+    TextButton #NextPageButton {
+      Anchor: (Width: 70, Height: 35);
+      Text: "Next";
+      Style: TextButtonStyle(
+        Default: (LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true)),
+        Hovered: (Background: #3a3a3a(0.9)),
+        Pressed: (Background: #4a4a4a(1.0)),
+        Sounds: $C.@ButtonSounds
+      );
+      Background: #2a2a2a(0.6);
+      Padding: (Full: 8);
+    }
+  }
+
+  Group #CraftSection {
+    Visible: false;
+    LayoutMode: Top;
+    FlexWeight: 1;
+
+    Label #NoRecipes {
+      Visible: false;
+      Style: (
+        FontSize: 13,
+        TextColor: #888888
+      );
+      Padding: (Top: 20);
+    }
+
+    Group #CraftList {
+      LayoutMode: TopScrolling;
+      ScrollbarStyle: $C.@DefaultScrollbarStyle;
+      FlexWeight: 1;
+    }
+  }
+
+  Group #UsageSection {
+    Visible: false;
+    LayoutMode: Top;
+    FlexWeight: 1;
+
+    Label #NoUsageRecipes {
+      Visible: false;
+      Style: (
+        FontSize: 13,
+        TextColor: #888888
+      );
+      Padding: (Top: 20);
+    }
+
+    Group #UsageList {
+      LayoutMode: TopScrolling;
+      ScrollbarStyle: $C.@DefaultScrollbarStyle;
+      FlexWeight: 1;
+    }
+  }
+
+  Label #NoRecipes {
+    Visible: false;
+    Style: (
+      FontSize: 13,
+      TextColor: #888888
+    );
+    Padding: (Top: 20);
+  }
+}
