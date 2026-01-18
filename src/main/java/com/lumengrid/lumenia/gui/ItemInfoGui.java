@@ -197,14 +197,14 @@ public class ItemInfoGui extends InteractiveCustomUIPage<ItemInfoGui.GuiData> {
         int propIndex = 0;
         
         // Add vanilla/modded info first, then Max Stack on the same row
-        String originInfo = this.resolveItemOrigin(this.selectedItem);
+        // String originInfo = this.resolveItemOrigin(this.selectedItem);
         String maxStackText = "Max Stack: " + item.getMaxStack();
         
         // Use a template file for the row with Max Stack and Origin
         commandBuilder.append("#RecipePanel #ItemInfo #ItemProperties", "Pages/Lumengrid_Lumenia_ItemPropertyRow.ui");
         String rowPath = "#RecipePanel #ItemInfo #ItemProperties[" + propIndex + "]";
         commandBuilder.set(rowPath + " #MaxStackLabel.Text", maxStackText);
-        commandBuilder.set(rowPath + " #OriginLabel.Text", originInfo);
+        // commandBuilder.set(rowPath + " #OriginLabel.Text", originInfo);
         propIndex++;
         
         if (item.getMaxDurability() > 0) {
