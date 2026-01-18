@@ -5,16 +5,13 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.assetstore.AssetPack;
-import com.hypixel.hytale.assetstore.map.DefaultAssetMap;
-import com.hypixel.hytale.common.plugin.PluginManifest;
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.protocol.BenchRequirement;
 import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
-import com.hypixel.hytale.server.core.asset.AssetModule;
 import com.hypixel.hytale.server.core.asset.type.item.config.CraftingRecipe;
+import com.hypixel.hytale.server.core.asset.type.item.config.ItemQuality;
 import com.hypixel.hytale.server.core.inventory.MaterialQuantity;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
@@ -50,6 +47,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
     private int usagePage = 0;
     private static final int CRAFT_RECIPES_PER_PAGE = 1;
     private static final int USAGE_RECIPES_PER_PAGE = 1;
+
 
     public JEIGui(@Nonnull PlayerRef playerRef, @Nonnull CustomPageLifetime lifetime, String defaultSearchQuery) {
         super(playerRef, lifetime, GuiData.CODEC);
@@ -116,7 +114,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             this.activeSection = "info";
             this.craftPage = 0;
             this.usagePage = 0;
-            
+
             UICommandBuilder commandBuilder = new UICommandBuilder();
             UIEventBuilder eventBuilder = new UIEventBuilder();
             this.buildItemInfoPanel(ref, commandBuilder, eventBuilder, store);
@@ -127,9 +125,9 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             this.activeSection = data.activeSection;
             UICommandBuilder commandBuilder = new UICommandBuilder();
             UIEventBuilder eventBuilder = new UIEventBuilder();
-            
+
             Item item = Main.ITEMS.get(this.selectedItem);
-            
+
             // Re-register event bindings for section buttons
             eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#RecipePanel #SectionButtons #InfoButton",
                     EventData.of(GuiData.KEY_ACTIVE_SECTION, "info"), false);
@@ -137,7 +135,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                     EventData.of(GuiData.KEY_ACTIVE_SECTION, "craft"), false);
             eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#RecipePanel #SectionButtons #UsedInButton",
                     EventData.of(GuiData.KEY_ACTIVE_SECTION, "usage"), false);
-            
+
             if ("info".equals(this.activeSection)) {
                 commandBuilder.set("#RecipePanel #UsageSection.Visible", false);
                 commandBuilder.set("#RecipePanel #CraftSection.Visible", false);
@@ -159,7 +157,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 int validUsageCount = this.countValidUsageRecipes(usageRecipeIds);
                 this.buildUsageSection(ref, commandBuilder, eventBuilder, store, usageRecipeIds, validUsageCount);
             }
-            
+
             this.sendUpdate(commandBuilder, eventBuilder, false);
         }
 
@@ -422,14 +420,14 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         commandBuilder.set("#RecipePanel #ItemInfo #ItemIcon.Visible", true);
         commandBuilder.set("#RecipePanel #ItemInfo #ItemName.TextSpans", Message.translation(item.getTranslationKey()).bold(true));
         commandBuilder.set("#RecipePanel #ItemInfo #ItemId.Text", this.selectedItem);
-        
+
         // Hide item properties in the header (they will be shown in Info section)
         commandBuilder.set("#RecipePanel #ItemInfo #ItemProperties.Visible", false);
-        
+
         this.activeSection = "info";
         this.craftPage = 0;
         this.usagePage = 0;
-        
+
         commandBuilder.set("#RecipePanel #UsageSection.Visible", false);
         commandBuilder.set("#RecipePanel #CraftSection.Visible", false);
         commandBuilder.set("#RecipePanel #InfoSection.Visible", true);
@@ -442,7 +440,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 EventData.of(GuiData.KEY_ACTIVE_SECTION, "craft"), false);
         eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#RecipePanel #SectionButtons #UsedInButton",
                 EventData.of(GuiData.KEY_ACTIVE_SECTION, "usage"), false);
-        
+
         // Build info section with item properties
         this.buildInfoSection(ref, commandBuilder, eventBuilder, store, item);
 
@@ -461,11 +459,11 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         }
 
         if (isCreative) {
-            commandBuilder.set("#RecipePanel #InfoSection #GiveItemButton.Visible", true);
-            eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#RecipePanel #InfoSection #GiveItemButton",
+            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #MaxStackRow #GiveItemButton.Visible", true);
+            eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#RecipePanel #InfoSection #ItemPropertiesInfo #MaxStackRow #GiveItemButton",
                     EventData.of(GuiData.KEY_GIVE_ITEM, this.selectedItem), false);
         } else {
-            commandBuilder.set("#RecipePanel #InfoSection #GiveItemButton.Visible", false);
+            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #MaxStackRow #GiveItemButton.Visible", false);
         }
 
         this.buildInfoSection(ref, commandBuilder, eventBuilder, store, item);
@@ -474,51 +472,61 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
     private void buildInfoSection(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder commandBuilder,
                                   @Nonnull UIEventBuilder eventBuilder, @Nonnull Store<EntityStore> store,
                                   @Nonnull Item item) {
-        commandBuilder.clear("#RecipePanel #InfoSection #ItemPropertiesInfo");
-        
+        commandBuilder.clear("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList");
+
         int propIndex = 0;
-        
-        String originInfo = this.resolveItemOrigin(this.selectedItem);
-        if (!originInfo.isEmpty()) {
-            commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo", "Label { Style: (FontSize: 14, TextColor: #aaaaaa); }");
-            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo[" + propIndex + "].Text", "Origin: " + originInfo);
-            propIndex++;
-        }
+//        try {
+//            String originInfo = this.resolveItemOrigin(item, this.selectedItem);
+//            if (!originInfo.isEmpty()) {
+//                commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList", "Label { Style: (FontSize: 14, TextColor: #aaaaaa, Wrap: true); }");
+//                commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Origin: " + originInfo);
+//                propIndex++;
+//            }
+//
+//        } catch (Exception e) {
+//
+//        }
 
         String maxStackText = "Max Stack: " + item.getMaxStack();
-        commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo", "Label { Style: (FontSize: 14, TextColor: #aaaaaa); }");
-        commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo[" + propIndex + "].Text", maxStackText);
-        propIndex++;
+        commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #MaxStackRow #MaxStackLabel.Text", maxStackText);
 
         try {
             java.lang.reflect.Method getQualityIndexMethod = Item.class.getMethod("getQualityIndex");
             Object qualityObj = getQualityIndexMethod.invoke(item);
             if (qualityObj != null) {
-                commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo", "Label { Style: (FontSize: 14, TextColor: #aaaaaa); }");
-                commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo[" + propIndex + "].Text", "Quality: " + qualityObj);
-                propIndex++;
+                ItemQuality itemQuality = ItemQuality.getAssetMap().getAsset((Integer) qualityObj);
+                if (itemQuality != null) {
+                    String qual = I18nModule.get().getMessage(this.playerRef.getLanguage(), itemQuality.getLocalizationKey());
+                    if (qual == null || qual.isEmpty()) {
+                        qual = itemQuality.getLocalizationKey();
+                    }
+                    commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList", "Label { Style: (FontSize: 14, TextColor: #aaaaaa, Wrap: true); }");
+                    commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Quality: " + qual);
+                    propIndex++;
+                }
+
             }
         } catch (Exception e) {
         }
 
         if (item.getItemLevel() > 0) {
-            commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo", "Label { Style: (FontSize: 14, TextColor: #aaaaaa); }");
-            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo[" + propIndex + "].Text", "Item Level: " + item.getItemLevel());
+            commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList", "Label { Style: (FontSize: 14, TextColor: #aaaaaa, Wrap: true); }");
+            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Item Level: " + item.getItemLevel());
             propIndex++;
         }
 
         if (item.getMaxDurability() > 0) {
-            commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo", "Label { Style: (FontSize: 14, TextColor: #aaaaaa); }");
-            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo[" + propIndex + "].Text", "Max Durability: " + item.getMaxDurability());
+            commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList", "Label { Style: (FontSize: 14, TextColor: #aaaaaa, Wrap: true); }");
+            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Max Durability: " + item.getMaxDurability());
             propIndex++;
         }
-        
+
         try {
             java.lang.reflect.Method isConsumableMethod = Item.class.getMethod("isConsumable");
             Object consumableObj = isConsumableMethod.invoke(item);
             if (consumableObj != null) {
-                commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo", "Label { Style: (FontSize: 14, TextColor: #aaaaaa); }");
-                commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo[" + propIndex + "].Text", "Is Consumable: " + this.formatBoolean((Boolean) consumableObj));
+                commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList", "Label { Style: (FontSize: 14, TextColor: #aaaaaa, Wrap: true); }");
+                commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Is Consumable: " + this.formatBoolean((Boolean) consumableObj));
                 propIndex++;
             }
         } catch (Exception e) {
@@ -530,38 +538,38 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             if (fuelQualityObj != null) {
                 int fuelQuality = (Integer) fuelQualityObj;
                 if (fuelQuality > 0) {
-                    commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo", "Label { Style: (FontSize: 14, TextColor: #aaaaaa); }");
-                    commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo[" + propIndex + "].Text", "Fuel Quality: " + fuelQuality);
+                    commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList", "Label { Style: (FontSize: 14, TextColor: #aaaaaa, Wrap: true); }");
+                    commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Fuel Quality: " + fuelQuality);
                     propIndex++;
                 }
             }
         } catch (Exception e) {
         }
 
-        commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo", "Label { Style: (FontSize: 14, TextColor: #aaaaaa); Anchor: (Height: 5); }");
-        commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo[" + propIndex + "].Text", "");
+        commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList", "Label { Style: (FontSize: 14, TextColor: #aaaaaa); Anchor: (Height: 5); }");
+        commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "");
         propIndex++;
 
 
         if (item.getTool() != null) {
-            commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo", "Label { Style: (FontSize: 14, TextColor: #aaaaaa); }");
-            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo[" + propIndex + "].Text", "Is Tool: " + this.formatBoolean(item.getTool() != null));
+            commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList", "Label { Style: (FontSize: 14, TextColor: #aaaaaa, Wrap: true); }");
+            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Is Tool: " + this.formatBoolean(item.getTool() != null));
             propIndex++;
         }
 
         if (item.getWeapon() != null) {
-            commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo", "Label { Style: (FontSize: 14, TextColor: #aaaaaa); }");
-            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo[" + propIndex + "].Text", "Is Weapon: " + this.formatBoolean(item.getWeapon() != null));
+            commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList", "Label { Style: (FontSize: 14, TextColor: #aaaaaa, Wrap: true); }");
+            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Is Weapon: " + this.formatBoolean(item.getWeapon() != null));
             propIndex++;
         }
 
         if (item.getArmor() != null) {
-            commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo", "Label { Style: (FontSize: 14, TextColor: #aaaaaa); }");
-            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo[" + propIndex + "].Text", "Is Armor: " + this.formatBoolean(item.getArmor() != null));
+            commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList", "Label { Style: (FontSize: 14, TextColor: #aaaaaa, Wrap: true); }");
+            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Is Armor: " + this.formatBoolean(item.getArmor() != null));
             propIndex++;
         }
     }
-    
+
     private String formatBoolean(boolean value) {
         return value ? "true" : "false";
     }
@@ -1080,99 +1088,6 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                     return itemId;
                 }
             }
-        }
-
-        return null;
-    }
-
-    @Nonnull
-    private String resolveItemOrigin(@Nonnull String itemId) {
-        try {
-            String originFull = this.resolveItemOwnerFull(itemId);
-            boolean isVanilla = this.isVanillaOwner(originFull);
-
-            if (isVanilla) {
-                return "vanilla";
-            } else {
-                String modName = originFull;
-                if (!modName.isEmpty()) {
-                    int colon = modName.indexOf(':');
-                    if (colon >= 0 && colon + 1 < modName.length()) {
-                        modName = modName.substring(colon + 1);
-                    }
-                    return "Mod: " + modName;
-                }
-            }
-        } catch (Exception e) {
-        }
-        return "";
-    }
-
-    @Nonnull
-    private String resolveItemOwnerFull(@Nonnull String itemId) {
-        if (itemId != null && !itemId.isEmpty()) {
-            int colon = itemId.indexOf(':');
-            if (colon > 0) {
-                String ns = itemId.substring(0, colon);
-                if (ns.equalsIgnoreCase("core")) {
-                    return "Hytale:Hytale";
-                }
-                return ns;
-            }
-        }
-
-        String fromPack = this.getOriginFromItemPackMap(itemId);
-        return fromPack != null && !fromPack.isEmpty() ? fromPack : "";
-    }
-
-    private boolean isVanillaOwner(String ownerFull) {
-        return ownerFull != null && ownerFull.equalsIgnoreCase("Hytale:Hytale");
-    }
-
-    private String getOriginFromItemPackMap(@Nonnull String itemId) {
-        try {
-            DefaultAssetMap<String, Item> assetMap = Item.getAssetMap();
-            if (assetMap == null) {
-                return null;
-            }
-
-            java.util.Collection<AssetPack> assetPacks = AssetModule.get().getAssetPacks();
-            if (assetPacks == null) {
-                return null;
-            }
-
-            String lowerItemId = itemId.toLowerCase(Locale.ENGLISH);
-
-            for (AssetPack pack : assetPacks) {
-                if (pack == null) continue;
-
-                java.util.Set<String> keys = assetMap.getKeysForPack(pack.getName());
-                if (keys == null || !keys.contains(lowerItemId)) {
-                    continue;
-                }
-
-                String origin = null;
-                try {
-                    PluginManifest manifest = pack.getManifest();
-                    if (manifest != null) {
-                        String group = manifest.getGroup();
-                        String name = manifest.getName();
-                        if (group != null && !group.isEmpty() && name != null && !name.isEmpty()) {
-                            origin = group + ":" + name;
-                        } else if (name != null && !name.isEmpty()) {
-                            origin = name;
-                        }
-                    }
-                } catch (Exception e) {
-                }
-
-                if (origin == null || origin.isEmpty()) {
-                    origin = pack.getName();
-                }
-
-                return origin;
-            }
-        } catch (Exception e) {
         }
 
         return null;

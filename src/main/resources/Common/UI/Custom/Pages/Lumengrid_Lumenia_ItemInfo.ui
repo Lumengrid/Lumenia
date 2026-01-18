@@ -7,12 +7,11 @@ Group #RecipePanel {
 
   Group #ItemInfo {
     LayoutMode: Top;
-    Padding: (Full: 10, Bottom: 20);
+    Padding: (Full: 10, Bottom: 5);
     Background: (Color: #1a1a1a(0.6));
 
     Group #ItemHeader {
       LayoutMode: Left;
-      Padding: (Bottom: 5);
 
       Group {
         LayoutMode: Left;
@@ -53,16 +52,16 @@ Group #RecipePanel {
 
   Group #SectionButtons {
     LayoutMode: Left;
-    Padding: (Top: 10, Bottom: 10);
+    Padding: (Top: 10, Bottom: 5);
     Anchor: (Height: 50);
 
     TextButton #InfoButton {
-      Anchor: (Width: 112, Height: 40);
+      Anchor: (Width: 111, Height: 40);
       Text: "Info";
       Style: TextButtonStyle(
-        Default: (LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center)),
-        Hovered: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center), Background: #3a3a3a(0.8)),
-        Pressed: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center), Background: #3a3a3a(0.9)),
+        Default: (LabelStyle: (FontSize: 14, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)),
+        Hovered: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center, VerticalAlignment: Center), Background: #3a3a3a(0.8)),
+        Pressed: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center, VerticalAlignment: Center), Background: #3a3a3a(0.9)),
         Sounds: $C.@ButtonSounds
       );
       Background: #2a2a2a(0.6);
@@ -74,12 +73,12 @@ Group #RecipePanel {
     }
 
     TextButton #HowToCraftButton {
-      Anchor: (Width: 112, Height: 40);
+      Anchor: (Width: 111, Height: 40);
       Text: "How to Craft";
       Style: TextButtonStyle(
-        Default: (LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center)),
-        Hovered: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center), Background: #3a3a3a(0.8)),
-        Pressed: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center), Background: #3a3a3a(0.9)),
+        Default: (LabelStyle: (FontSize: 14, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)),
+        Hovered: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center, VerticalAlignment: Center), Background: #3a3a3a(0.8)),
+        Pressed: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center, VerticalAlignment: Center), Background: #3a3a3a(0.9)),
         Sounds: $C.@ButtonSounds
       );
       Background: #2a2a2a(0.6);
@@ -91,12 +90,12 @@ Group #RecipePanel {
     }
 
     TextButton #UsedInButton {
-      Anchor: (Width: 112, Height: 40);
+      Anchor: (Width: 111, Height: 40);
       Text: "Used In";
       Style: TextButtonStyle(
-        Default: (LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center)),
-        Hovered: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center), Background: #3a3a3a(0.8)),
-        Pressed: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center), Background: #3a3a3a(0.9)),
+        Default: (LabelStyle: (FontSize: 14, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)),
+        Hovered: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center, VerticalAlignment: Center), Background: #3a3a3a(0.8)),
+        Pressed: (LabelStyle: (FontSize: 15, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center, VerticalAlignment: Center), Background: #3a3a3a(0.9)),
         Sounds: $C.@ButtonSounds
       );
       Background: #2a2a2a(0.6);
@@ -110,34 +109,43 @@ Group #RecipePanel {
     FlexWeight: 1;
     Padding: (Top: 10);
 
-    Group {
-      LayoutMode: Left;
-      Padding: (Bottom: 5);
-      Anchor: (Height: 30);
-
-      Group {
-        FlexWeight: 1;
-      }
-
-      TextButton #GiveItemButton {
-        Anchor: (Width: 40, Height: 24);
-        Text: "Give";
-        Visible: false;
-        Style: TextButtonStyle(
-          Default: (LabelStyle: (FontSize: 14, TextColor: #ffffff, RenderBold: true)),
-          Hovered: (LabelStyle: (FontSize: 14, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center), Background: #2a7a2a(0.8)),
-          Pressed: (Background: #3a9a3a(0.9)),
-          Sounds: $C.@ButtonSounds
-        );
-        Background: #1a5a1a(0.6);
-        Padding: (Full: 3);
-      }
-    }
-
     Group #ItemPropertiesInfo {
       LayoutMode: Top;
-      Padding: (Top: 5);
+      Padding: (Full: 8);
       Background: (Color: #1a1a1a(0.7));
+
+      Group #MaxStackRow {
+        LayoutMode: Left;
+        Padding: (Bottom: 2);
+        Anchor: (Height: 24);
+
+        Label #MaxStackLabel {
+          FlexWeight: 1;
+          Style: (
+            FontSize: 14,
+            TextColor: #aaaaaa,
+            Wrap: true
+          );
+        }
+
+        TextButton #GiveItemButton {
+          Anchor: (Width: 40, Height: 24);
+          Text: "Give";
+          Visible: false;
+          Style: TextButtonStyle(
+            Default: (LabelStyle: (FontSize: 14, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)),
+            Hovered: (LabelStyle: (FontSize: 14, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center, VerticalAlignment: Center), Background: #2a7a2a(0.8)),
+            Pressed: (LabelStyle: (FontSize: 14, TextColor: #ffffff, RenderBold: false, HorizontalAlignment: Center, VerticalAlignment: Center), Background: #2a7a2a(0.9)),
+            Sounds: $C.@ButtonSounds
+          );
+          Background: #1a5a1a(0.6);
+          Padding: (Full: 3);
+        }
+      }
+
+      Group #ItemPropertiesList {
+        LayoutMode: Top;
+      }
     }
   }
 
