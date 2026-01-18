@@ -3,6 +3,7 @@ package com.lumengrid.lumenia;
 import com.hypixel.hytale.assetstore.event.LoadedAssetsEvent;
 import com.hypixel.hytale.assetstore.event.RemovedAssetsEvent;
 import com.hypixel.hytale.assetstore.map.DefaultAssetMap;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.item.config.CraftingRecipe;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.inventory.MaterialQuantity;
@@ -14,7 +15,7 @@ import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import java.util.*;
 
 public class Main extends JavaPlugin {
-
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     public static Map<String, Item> ITEMS = new HashMap<>();
     public static Map<String, CraftingRecipe> RECIPES = new HashMap<>();
     public static Map<String, List<String>> ITEM_TO_RECIPES = new HashMap<>(); // Item ID -> Recipe IDs that produce it

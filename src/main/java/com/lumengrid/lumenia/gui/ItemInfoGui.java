@@ -197,14 +197,14 @@ public class ItemInfoGui extends InteractiveCustomUIPage<ItemInfoGui.GuiData> {
         int propIndex = 0;
         
         // Add vanilla/modded info first, then Max Stack on the same row
-        // String originInfo = this.resolveItemOrigin(this.selectedItem);
+        String originInfo = this.resolveItemOrigin(this.selectedItem);
         String maxStackText = "Max Stack: " + item.getMaxStack();
         
         // Use a template file for the row with Max Stack and Origin
         commandBuilder.append("#RecipePanel #ItemInfo #ItemProperties", "Pages/Lumengrid_Lumenia_ItemPropertyRow.ui");
         String rowPath = "#RecipePanel #ItemInfo #ItemProperties[" + propIndex + "]";
         commandBuilder.set(rowPath + " #MaxStackLabel.Text", maxStackText);
-        // commandBuilder.set(rowPath + " #OriginLabel.Text", originInfo);
+        commandBuilder.set(rowPath + " #OriginLabel.Text", originInfo);
         propIndex++;
         
         if (item.getMaxDurability() > 0) {
@@ -792,23 +792,26 @@ public class ItemInfoGui extends InteractiveCustomUIPage<ItemInfoGui.GuiData> {
 
     @Nonnull
     private String resolveItemOrigin(@Nonnull String itemId) {
-        String originFull = this.resolveItemOwnerFull(itemId);
-        System.out.println("origin" + originFull);
-        boolean isVanilla = this.isVanillaOwner(originFull);
-        
-        if (isVanilla) {
-            return "vanilla";
-        } else {
-            String modName = originFull;
-            if (modName != null && !modName.isEmpty()) {
-                int colon = modName.indexOf(':');
-                if (colon >= 0 && colon + 1 < modName.length()) {
-                    modName = modName.substring(colon + 1);
+        try {
+            String originFull = this.resolveItemOwnerFull(itemId);
+            boolean isVanilla = this.isVanillaOwner(originFull);
+
+            if (isVanilla) {
+                return "vanilla";
+            } else {
+                String modName = originFull;
+                if (!modName.isEmpty()) {
+                    int colon = modName.indexOf(':');
+                    if (colon >= 0 && colon + 1 < modName.length()) {
+                        modName = modName.substring(colon + 1);
+                    }
+                    return modName;
                 }
-                return "MOD: " + modName;
             }
-            return "MOD";
+        } catch (Exception e) {
+
         }
+        return "";
     }
 
     @Nonnull

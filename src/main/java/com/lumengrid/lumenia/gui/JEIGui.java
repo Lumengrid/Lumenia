@@ -5,11 +5,15 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.assetstore.AssetPack;
+import com.hypixel.hytale.assetstore.map.DefaultAssetMap;
+import com.hypixel.hytale.common.plugin.PluginManifest;
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.protocol.BenchRequirement;
 import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
+import com.hypixel.hytale.server.core.asset.AssetModule;
 import com.hypixel.hytale.server.core.asset.type.item.config.CraftingRecipe;
 import com.hypixel.hytale.server.core.asset.type.item.config.ItemQuality;
 import com.hypixel.hytale.server.core.inventory.MaterialQuantity;
@@ -475,17 +479,16 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         commandBuilder.clear("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList");
 
         int propIndex = 0;
-//        try {
-//            String originInfo = this.resolveItemOrigin(item, this.selectedItem);
-//            if (!originInfo.isEmpty()) {
-//                commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList", "Label { Style: (FontSize: 14, TextColor: #aaaaaa, Wrap: true); }");
-//                commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Origin: " + originInfo);
-//                propIndex++;
-//            }
-//
-//        } catch (Exception e) {
-//
-//        }
+
+        try {
+            String originInfo = this.resolveItemOrigin(this.selectedItem);
+            if (!originInfo.isEmpty()) {
+                commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList", "Label { Style: (FontSize: 14, TextColor: #aaaaaa, Wrap: true); }");
+                commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Origin: " + originInfo);
+                propIndex++;
+            }
+        } catch (Exception e) {
+        }
 
         String maxStackText = "Max Stack: " + item.getMaxStack();
         commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #MaxStackRow #MaxStackLabel.Text", maxStackText);
@@ -1091,6 +1094,63 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         }
 
         return null;
+    }
+
+    @Nonnull
+    private String resolveItemOrigin(@Nonnull String itemId) {
+        try {
+            // Get the asset map for items
+            DefaultAssetMap<String, Item> assetMap = Item.getAssetMap();
+            if (assetMap == null) {
+                return "vanilla";
+            }
+
+            // Get the pack name that contains this item
+            String packName = assetMap.getAssetPack(itemId);
+            if (packName == null || packName.isEmpty()) {
+                // Fallback: check namespace in itemId
+                int colonIndex = itemId.indexOf(':');
+                if (colonIndex > 0) {
+                    String namespace = itemId.substring(0, colonIndex);
+                    if (namespace.equalsIgnoreCase("core") || namespace.equalsIgnoreCase("hytale")) {
+                        return "vanilla";
+                    }
+                    return "Mod: " + namespace;
+                }
+                return "vanilla";
+            }
+
+            // Get the AssetPack object
+            AssetPack pack = AssetModule.get().getAssetPack(packName);
+            if (pack == null) {
+                // Fallback to pack name
+                return "Mod: " + packName;
+            }
+
+            // Check if it's the base pack (vanilla)
+            AssetPack basePack = AssetModule.get().getBaseAssetPack();
+            if (pack.equals(basePack)) {
+                return "vanilla";
+            }
+
+            // Get the mod name from manifest
+            try {
+                PluginManifest manifest = pack.getManifest();
+                if (manifest != null) {
+                    String modName = manifest.getName();
+                    if (modName != null && !modName.isEmpty()) {
+                        return "Mod: " + modName;
+                    }
+                }
+            } catch (Exception e) {
+                // Ignore manifest errors
+            }
+
+            // Fallback to pack name
+            return "Mod: " + packName;
+        } catch (Exception e) {
+            return "vanilla";
+        }
     }
 
     public static class GuiData {
