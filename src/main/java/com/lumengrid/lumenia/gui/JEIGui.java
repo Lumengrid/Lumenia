@@ -459,7 +459,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         }
 
         if (isCreative) {
-            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #MaxStackRow #GiveItemButton.Visible", true);
+            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #MaxStackRow #GiveItemButton.Visible", false);
             eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#RecipePanel #InfoSection #ItemPropertiesInfo #MaxStackRow #GiveItemButton",
                     EventData.of(GuiData.KEY_GIVE_ITEM, this.selectedItem), false);
         } else {

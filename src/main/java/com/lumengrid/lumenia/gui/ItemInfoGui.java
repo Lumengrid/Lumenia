@@ -261,7 +261,7 @@ public class ItemInfoGui extends InteractiveCustomUIPage<ItemInfoGui.GuiData> {
         }
 
         if (isCreative) {
-            commandBuilder.set("#RecipePanel #ItemInfo #GiveItemButton.Visible", true);
+            commandBuilder.set("#RecipePanel #ItemInfo #GiveItemButton.Visible", false);
             eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#RecipePanel #ItemInfo #GiveItemButton",
                     EventData.of(GuiData.KEY_GIVE_ITEM, this.selectedItem), false);
         } else {
