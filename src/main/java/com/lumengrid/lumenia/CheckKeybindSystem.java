@@ -42,12 +42,12 @@ public class CheckKeybindSystem extends EntityTickingSystem<EntityStore> {
                 return;
             }
 
-            LumeniaComponent component = commandBuffer.ensureAndGetComponent(ref, LumeniaComponent.getComponentType());
             MovementStates movementStates = statesComponent.getMovementStates();
 
             if (movementStates.walking) {
                 boolean pageOpen = player.getPageManager().getCustomPage() != null;
-                if (!pageOpen && component.openJeiKeybind) {
+                boolean keybindEnabled = Main.getInstance().config.get().defaultOpenJeiKeybind;
+                if (!pageOpen && keybindEnabled) {
                     try {
                         PageManager pageManager = player.getPageManager();
                         if (pageManager.getCustomPage() == null) {
