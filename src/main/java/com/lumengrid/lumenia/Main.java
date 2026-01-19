@@ -10,10 +10,13 @@ import com.hypixel.hytale.protocol.BenchType;
 import com.hypixel.hytale.server.core.asset.type.item.config.CraftingRecipe;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.inventory.MaterialQuantity;
+import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.plugin.registry.CodecMapRegistry;
 import com.hypixel.hytale.server.core.util.Config;
 import com.lumengrid.lumenia.commands.OpenJEICommand;
+import com.lumengrid.lumenia.interactions.OpenLumeniaBookInteraction;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
@@ -59,6 +62,9 @@ public class Main extends JavaPlugin {
         this.getCommandRegistry().registerCommand(new OpenJEICommand());
 
         this.getEntityStoreRegistry().registerSystem(new CheckKeybindSystem());
+
+        CodecMapRegistry.Assets<Interaction, ?> interactionRegistry = getCodecRegistry(Interaction.CODEC);
+        interactionRegistry.register("OpenLumeniaBookInteraction", OpenLumeniaBookInteraction.class, OpenLumeniaBookInteraction.CODEC);
     }
 
     private static void onItemAssetLoad(LoadedAssetsEvent<String, Item, DefaultAssetMap<String, Item>> event) {
