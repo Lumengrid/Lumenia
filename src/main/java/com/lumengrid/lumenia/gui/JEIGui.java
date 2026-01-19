@@ -16,12 +16,15 @@ import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.asset.AssetModule;
 import com.hypixel.hytale.server.core.asset.type.item.config.CraftingRecipe;
 import com.hypixel.hytale.server.core.asset.type.item.config.ItemQuality;
+import com.hypixel.hytale.server.core.asset.util.ColorParseUtil;
 import com.hypixel.hytale.server.core.inventory.MaterialQuantity;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.command.system.MatchResult;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
+import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.modules.i18n.I18nModule;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -201,24 +204,32 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         }
 
         if (data.giveItem != null && !data.giveItem.isEmpty()) {
-            ComponentAccessor<EntityStore> componentAccessor = store;
-            Player playerComponent = componentAccessor.getComponent(ref, Player.getComponentType());
-            if (playerComponent != null) {
-                Item item = Main.ITEMS.get(data.giveItem);
-                if (item != null) {
-                    try {
-                        var inv = playerComponent.getInventory();
-                        if (inv != null) {
-                            java.lang.reflect.Method createItemStackMethod = Item.class.getMethod("createItemStack", int.class);
-                            Object itemStack = createItemStackMethod.invoke(item, 1);
-                            java.lang.reflect.Method addItemMethod = inv.getClass().getMethod("addItem", itemStack.getClass());
-                            addItemMethod.invoke(inv, itemStack);
-                            playerComponent.sendMessage(Message.raw("Item given!").color("#00ff00"));
-                        }
-                    } catch (Exception e) {
-                        playerComponent.sendMessage(Message.raw("Error giving item: " + e.getMessage()).color("#ff0000"));
-                    }
-                }
+            this.sendUpdate(new UICommandBuilder(), new UIEventBuilder(), false);
+            if (!ref.isValid()) {
+                return;
+            }
+
+            Player player = (Player) store.getComponent(ref, Player.getComponentType());
+            if (player == null) {
+                return;
+            }
+
+            GameMode gameMode = player.getGameMode();
+            if (gameMode != GameMode.Creative) {
+                return;
+            }
+
+            Item item = (Item) Item.getAssetMap().getAsset(data.giveItem);
+            if (item == null) {
+                return;
+            }
+
+            try {
+                ItemStack stack = new ItemStack(data.giveItem);
+                ItemContainer itemContainer = player.getInventory().getCombinedHotbarFirst();
+                itemContainer.addItemStack(stack);
+            } catch (Exception e) {
+                // Silently fail - item might not be creatable
             }
         }
 
@@ -463,7 +474,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         }
 
         if (isCreative) {
-            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #MaxStackRow #GiveItemButton.Visible", false);
+            commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #MaxStackRow #GiveItemButton.Visible", true);
             eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#RecipePanel #InfoSection #ItemPropertiesInfo #MaxStackRow #GiveItemButton",
                     EventData.of(GuiData.KEY_GIVE_ITEM, this.selectedItem), false);
         } else {
@@ -499,12 +510,20 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             if (qualityObj != null) {
                 ItemQuality itemQuality = ItemQuality.getAssetMap().getAsset((Integer) qualityObj);
                 if (itemQuality != null) {
-                    String qual = I18nModule.get().getMessage(this.playerRef.getLanguage(), itemQuality.getLocalizationKey());
-                    if (qual == null || qual.isEmpty()) {
-                        qual = itemQuality.getLocalizationKey();
-                    }
                     commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList", "Label { Style: (FontSize: 14, TextColor: #aaaaaa, Wrap: true); }");
-                    commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Quality: " + qual);
+                    try {
+                        int rgb = ColorParseUtil.colorToARGBInt(itemQuality.getTextColor());
+                        java.awt.Color color = new java.awt.Color(rgb);
+                        commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].TextSpans", 
+                                Message.raw("Quality: ").insert(Message.translation(itemQuality.getLocalizationKey()).color(color)));
+                    } catch (Exception e) {
+                        // Fallback to plain text if color parsing fails
+                        String qual = I18nModule.get().getMessage(this.playerRef.getLanguage(), itemQuality.getLocalizationKey());
+                        if (qual == null || qual.isEmpty()) {
+                            qual = itemQuality.getLocalizationKey();
+                        }
+                        commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Quality: " + qual);
+                    }
                     propIndex++;
                 }
 

@@ -3,15 +3,21 @@ package com.lumengrid.lumenia;
 import com.hypixel.hytale.assetstore.event.LoadedAssetsEvent;
 import com.hypixel.hytale.assetstore.event.RemovedAssetsEvent;
 import com.hypixel.hytale.assetstore.map.DefaultAssetMap;
+import com.hypixel.hytale.builtin.crafting.BenchRecipeRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.protocol.BenchRequirement;
+import com.hypixel.hytale.protocol.BenchType;
 import com.hypixel.hytale.server.core.asset.type.item.config.CraftingRecipe;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.inventory.MaterialQuantity;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.util.Config;
 import com.lumengrid.lumenia.commands.OpenJEICommand;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 public class Main extends JavaPlugin {
@@ -20,22 +26,39 @@ public class Main extends JavaPlugin {
     public static Map<String, CraftingRecipe> RECIPES = new HashMap<>();
     public static Map<String, List<String>> ITEM_TO_RECIPES = new HashMap<>(); // Item ID -> Recipe IDs that produce it
     public static Map<String, List<String>> ITEM_FROM_RECIPES = new HashMap<>(); // Item ID -> Recipe IDs that use it as input
+    private static final Map<String, BenchRecipeRegistry> registries = new Object2ObjectOpenHashMap<>();
+    private static Main instance;
+    public final Config<LumeniaConfig> config;
+    private com.hypixel.hytale.component.ComponentType<com.hypixel.hytale.server.core.universe.world.storage.EntityStore, LumeniaComponent> componentType;
+
+    public static Main getInstance() {
+        return instance;
+    }
+
+    public com.hypixel.hytale.component.ComponentType<com.hypixel.hytale.server.core.universe.world.storage.EntityStore, LumeniaComponent> getComponentType() {
+        return this.componentType;
+    }
 
     public Main(@NonNullDecl JavaPluginInit init) {
         super(init);
+        this.config = this.withConfig("Lumenia", LumeniaConfig.CODEC);
     }
 
     @Override
     protected void setup() {
         super.setup();
+        instance = this;
+        this.config.save();
 
-        // Register event listeners for items and recipes
+        this.componentType = this.getEntityStoreRegistry().registerComponent(LumeniaComponent.class, "Lumengrid_Lumenia", LumeniaComponent.CODEC);
+
         this.getEventRegistry().register(LoadedAssetsEvent.class, Item.class, Main::onItemAssetLoad);
         this.getEventRegistry().register(LoadedAssetsEvent.class, CraftingRecipe.class, Main::onRecipeLoad);
         this.getEventRegistry().register(RemovedAssetsEvent.class, CraftingRecipe.class, Main::onRecipeRemove);
 
-        // Register commands
         this.getCommandRegistry().registerCommand(new OpenJEICommand());
+
+        this.getEntityStoreRegistry().registerSystem(new CheckKeybindSystem());
     }
 
     private static void onItemAssetLoad(LoadedAssetsEvent<String, Item, DefaultAssetMap<String, Item>> event) {
@@ -43,8 +66,13 @@ public class Main extends JavaPlugin {
     }
 
     private static void onRecipeLoad(LoadedAssetsEvent<String, CraftingRecipe, DefaultAssetMap<String, CraftingRecipe>> event) {
-        // Get the getInput method using reflection
         java.lang.reflect.Method getInputMethod = null;
+        BenchRequirement benchReq = new BenchRequirement();
+        benchReq.id = CraftingRecipe.FIELDCRAFT_REQUIREMENT;
+        benchReq.requiredTierLevel = 1;
+        benchReq.type = BenchType.fromValue(0);
+        benchReq.categories = new String[] { "Lumenia" };
+        BenchRequirement[] benchField = new BenchRequirement[] { benchReq };
         try {
             getInputMethod = CraftingRecipe.class.getMethod("getInput");
         } catch (NoSuchMethodException e) {
@@ -59,7 +87,6 @@ public class Main extends JavaPlugin {
                 ITEM_TO_RECIPES.computeIfAbsent(output.getItemId(), k -> new ArrayList<>()).add(recipe.getId());
             }
 
-            // Track recipes that use each item as input
             if (getInputMethod != null) {
                 try {
                     Object inputsObj = getInputMethod.invoke(recipe);
@@ -106,7 +133,6 @@ public class Main extends JavaPlugin {
                     // Failed to invoke method - skip this recipe's inputs
                 }
             } else {
-                // getInput() method doesn't exist, try fallback methods
                 String[] methodNames = {"getInputs", "getIngredients", "getMaterials", "getRecipeInputs", "getRequiredMaterials"};
                 for (String methodName : methodNames) {
                     try {
@@ -150,6 +176,32 @@ public class Main extends JavaPlugin {
                     }
                 }
             }
+//            try {
+//                LOGGER.atInfo().log("LUMENIA" + recipe.getId());
+//                Field benchRequirementField = CraftingRecipe.class.getDeclaredField("benchRequirement");
+//                benchRequirementField.setAccessible(true);
+//
+//                if (recipe.getBenchRequirement() != null && Arrays.stream(recipe.getBenchRequirement())
+//                        .noneMatch(bench -> bench != null && CraftingRecipe.FIELDCRAFT_REQUIREMENT.equals(bench.id))) {
+//                    for (BenchRequirement benchRequirement : recipe.getBenchRequirement()) {
+//                        BenchRecipeRegistry benchRecipeRegistry = registries.computeIfAbsent(CraftingRecipe.FIELDCRAFT_REQUIREMENT, BenchRecipeRegistry::new);
+//                        benchRequirementField.set(recipe, benchField);
+//
+//                        benchRecipeRegistry.addRecipe(benchRequirement, recipe);
+//                        LOGGER.atInfo().log("LUMENIA " + benchRequirement.id + " " + benchRequirement.type.toString() + " " + benchRequirement.requiredTierLevel);
+//                    }
+//                }
+//            } catch (Exception e) {
+//                LOGGER.atSevere().log("LUMENIA" +e.getMessage());
+//            }
+
+        }
+        computeBenchRecipeRegistries();
+    }
+
+    private static void computeBenchRecipeRegistries() {
+        for (BenchRecipeRegistry registry : registries.values()) {
+            registry.recompute();
         }
     }
 
@@ -157,7 +209,6 @@ public class Main extends JavaPlugin {
         for (String recipeId : event.getRemovedAssets()) {
             CraftingRecipe recipe = RECIPES.remove(recipeId);
             if (recipe != null) {
-                // Clean up mappings
                 for (MaterialQuantity output : recipe.getOutputs()) {
                     List<String> recipes = ITEM_TO_RECIPES.get(output.getItemId());
                     if (recipes != null) {
@@ -165,7 +216,6 @@ public class Main extends JavaPlugin {
                     }
                 }
 
-                // Clean up input mappings if we were tracking them
                 try {
                     java.lang.reflect.Method getInputMethod = CraftingRecipe.class.getMethod("getInput");
                     Object inputsObj = getInputMethod.invoke(recipe);
