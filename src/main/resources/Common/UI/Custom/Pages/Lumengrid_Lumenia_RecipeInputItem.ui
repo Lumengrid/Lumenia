@@ -39,12 +39,15 @@ Group {
         }
       }
 
-      Label #ItemId {
-        Style: (
-          FontSize: 11,
-          TextColor: #aaaaaa
+      TextButton #ItemId {
+        Anchor: (Height: 16);
+        Style: TextButtonStyle(
+          Default: (LabelStyle: (FontSize: 11, TextColor: #aaaaaa)),
+          Hovered: (LabelStyle: (FontSize: 11, TextColor: #4a9eff)),
+          Pressed: (LabelStyle: (FontSize: 11, TextColor: #6abfff))
         );
-        Padding: (Top: 2);
+        Background: (Color: #000000(0.0));
+        Padding: (Top: 2, Full: 0);
       }
     }
   }

@@ -34,11 +34,15 @@ Group #RecipePanel {
             );
           }
 
-          Label #ItemId {
-            Style: (
-              FontSize: 12,
-              TextColor: #888888
+          TextButton #ItemId {
+            Anchor: (Height: 18);
+            Style: TextButtonStyle(
+              Default: (LabelStyle: (FontSize: 12, TextColor: #888888)),
+              Hovered: (LabelStyle: (FontSize: 12, TextColor: #4a9eff)),
+              Pressed: (LabelStyle: (FontSize: 12, TextColor: #6abfff))
             );
+            Background: (Color: #000000(0.0));
+            Padding: (Full: 0);
           }
         }
       }

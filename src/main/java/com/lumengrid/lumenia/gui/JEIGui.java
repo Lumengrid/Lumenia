@@ -248,6 +248,21 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             this.sendUpdate(commandBuilder, eventBuilder, false);
         }
 
+        if (data.copyItemId != null && !data.copyItemId.isEmpty()) {
+            if (!ref.isValid()) {
+                return;
+            }
+
+            Player player = (Player) store.getComponent(ref, Player.getComponentType());
+            if (player == null) {
+                return;
+            }
+
+            // Send item ID to chat as clickable link
+            String itemId = data.copyItemId;
+            player.sendMessage(Message.raw(itemId).color(java.awt.Color.GREEN));
+        }
+
     }
 
     private void buildItemGrid(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder commandBuilder,
@@ -353,6 +368,11 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             commandBuilder.set("#ItemGrid[" + rowIndex + "][" + cardsInCurrentRow + "] #ItemIcon.Visible", true);
             commandBuilder.set("#ItemGrid[" + rowIndex + "][" + cardsInCurrentRow + "] #ItemName.TextSpans", Message.translation(entry.getValue().getTranslationKey()));
             commandBuilder.set("#ItemGrid[" + rowIndex + "][" + cardsInCurrentRow + "] #ItemId.Text", entry.getKey());
+            
+            // Add event binding for clicking on item ID
+            eventBuilder.addEventBinding(CustomUIEventBindingType.Activating,
+                    "#ItemGrid[" + rowIndex + "][" + cardsInCurrentRow + "] #ItemId",
+                    EventData.of(GuiData.KEY_COPY_ITEM_ID, entry.getKey()), false);
 
             eventBuilder.addEventBinding(CustomUIEventBindingType.Activating,
                     "#ItemGrid[" + rowIndex + "][" + cardsInCurrentRow + "]",
@@ -435,6 +455,11 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         commandBuilder.set("#RecipePanel #ItemInfo #ItemIcon.Visible", true);
         commandBuilder.set("#RecipePanel #ItemInfo #ItemName.TextSpans", Message.translation(item.getTranslationKey()).bold(true));
         commandBuilder.set("#RecipePanel #ItemInfo #ItemId.Text", this.selectedItem);
+        
+        // Add event binding for clicking on item ID in info panel
+        eventBuilder.addEventBinding(CustomUIEventBindingType.Activating,
+                "#RecipePanel #ItemInfo #ItemId",
+                EventData.of(GuiData.KEY_COPY_ITEM_ID, this.selectedItem), false);
 
         // Hide item properties in the header (they will be shown in Info section)
         commandBuilder.set("#RecipePanel #ItemInfo #ItemProperties.Visible", false);
@@ -636,7 +661,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
 
                 try {
                     commandBuilder.append("#RecipePanel #CraftSection #CraftList", "Pages/Lumengrid_Lumenia_RecipeDisplay.ui");
-                    this.buildRecipeDisplay(commandBuilder, recipe, "#RecipePanel #CraftSection #CraftList", recipeIndex);
+                    this.buildRecipeDisplay(commandBuilder, eventBuilder, recipe, "#RecipePanel #CraftSection #CraftList", recipeIndex);
                     ++recipeIndex;
                 } catch (Exception e) {
                     continue;
@@ -685,7 +710,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
 
                 try {
                     commandBuilder.append("#RecipePanel #UsageSection #UsageList", "Pages/Lumengrid_Lumenia_RecipeDisplay.ui");
-                    this.buildRecipeDisplay(commandBuilder, recipe, "#RecipePanel #UsageSection #UsageList", recipeIndex);
+                    this.buildRecipeDisplay(commandBuilder, eventBuilder, recipe, "#RecipePanel #UsageSection #UsageList", recipeIndex);
                     ++recipeIndex;
                 } catch (Exception e) {
                     continue;
@@ -792,8 +817,8 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         return this.getValidUsageRecipes(usageRecipeIds).size();
     }
 
-    private void buildRecipeDisplay(@Nonnull UICommandBuilder commandBuilder, @Nonnull CraftingRecipe recipe,
-                                    @Nonnull String listSelector, int recipeIndex) {
+    private void buildRecipeDisplay(@Nonnull UICommandBuilder commandBuilder, @Nonnull UIEventBuilder eventBuilder,
+                                    @Nonnull CraftingRecipe recipe, @Nonnull String listSelector, int recipeIndex) {
         String recipeSelector = listSelector + "[" + recipeIndex + "]";
         String contentSelector = recipeSelector + " #RecipeContentContainer #RecipeContent";
 
@@ -866,7 +891,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             if (inputsObj instanceof MaterialQuantity) {
                 MaterialQuantity input = (MaterialQuantity) inputsObj;
                 if (input != null) {
-                    this.addIngredientItem(commandBuilder, inputGridSelector, input, inputIndex++);
+                    this.addIngredientItem(commandBuilder, eventBuilder, inputGridSelector, input, inputIndex++);
                 }
             } else if (inputsObj instanceof List) {
                 @SuppressWarnings("unchecked")
@@ -874,7 +899,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 if (inputs != null && !inputs.isEmpty()) {
                     for (MaterialQuantity input : inputs) {
                         if (input != null) {
-                            this.addIngredientItem(commandBuilder, inputGridSelector, input, inputIndex++);
+                            this.addIngredientItem(commandBuilder, eventBuilder, inputGridSelector, input, inputIndex++);
                         }
                     }
                 }
@@ -883,7 +908,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 if (inputs != null && inputs.length > 0) {
                     for (MaterialQuantity input : inputs) {
                         if (input != null) {
-                            this.addIngredientItem(commandBuilder, inputGridSelector, input, inputIndex++);
+                            this.addIngredientItem(commandBuilder, eventBuilder, inputGridSelector, input, inputIndex++);
                         }
                     }
                 }
@@ -893,7 +918,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 if (inputs != null && !inputs.isEmpty()) {
                     for (MaterialQuantity input : inputs) {
                         if (input != null) {
-                            this.addIngredientItem(commandBuilder, inputGridSelector, input, inputIndex++);
+                            this.addIngredientItem(commandBuilder, eventBuilder, inputGridSelector, input, inputIndex++);
                         }
                     }
                 }
@@ -918,7 +943,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 if (outputs != null && !outputs.isEmpty()) {
                     for (MaterialQuantity output : outputs) {
                         if (output != null && output.getItemId() != null) {
-                            this.addOutputItem(commandBuilder, outputGridSelector, output, outputIndex++);
+                            this.addOutputItem(commandBuilder, eventBuilder, outputGridSelector, output, outputIndex++);
                         }
                     }
                 }
@@ -927,7 +952,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 if (outputs != null && outputs.length > 0) {
                     for (MaterialQuantity output : outputs) {
                         if (output != null && output.getItemId() != null) {
-                            this.addOutputItem(commandBuilder, outputGridSelector, output, outputIndex++);
+                            this.addOutputItem(commandBuilder, eventBuilder, outputGridSelector, output, outputIndex++);
                         }
                     }
                 }
@@ -937,7 +962,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 if (outputs != null && !outputs.isEmpty()) {
                     for (MaterialQuantity output : outputs) {
                         if (output != null && output.getItemId() != null) {
-                            this.addOutputItem(commandBuilder, outputGridSelector, output, outputIndex++);
+                            this.addOutputItem(commandBuilder, eventBuilder, outputGridSelector, output, outputIndex++);
                         }
                     }
                 }
@@ -949,8 +974,8 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         }
     }
 
-    private void addIngredientItem(@Nonnull UICommandBuilder commandBuilder, @Nonnull String inputGridSelector,
-                                   @Nonnull MaterialQuantity input, int inputIndex) {
+    private void addIngredientItem(@Nonnull UICommandBuilder commandBuilder, @Nonnull UIEventBuilder eventBuilder,
+                                   @Nonnull String inputGridSelector, @Nonnull MaterialQuantity input, int inputIndex) {
         commandBuilder.append(inputGridSelector, "Pages/Lumengrid_Lumenia_RecipeInputItem.ui");
 
         String itemId = input.getItemId();
@@ -992,7 +1017,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         }
 
         String displayId = (itemId != null && !itemId.isEmpty()) ? itemId : resourceType;
-        String displayType = (itemId != null && !itemId.isEmpty()) ? "ID" : "Resource Type";
+        String displayType = (itemId != null && !itemId.isEmpty()) ? "" : "Resource Type: ";
 
         if (itemId != null && !itemId.isEmpty()) {
             commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemIcon.ItemId", "");
@@ -1022,11 +1047,18 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
 
         commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemName.Text", itemName);
         commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #Quantity.Text", "x" + input.getQuantity());
-        commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemId.Text", displayType + ": " + displayId);
+        commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemId.Text", displayType + " " + displayId);
+        
+        // Add event binding for clicking on item ID in recipe input
+        if (itemId != null && !itemId.isEmpty()) {
+            eventBuilder.addEventBinding(CustomUIEventBindingType.Activating,
+                    inputGridSelector + "[" + inputIndex + "] #ItemId",
+                    EventData.of(GuiData.KEY_COPY_ITEM_ID, itemId), false);
+        }
     }
 
-    private void addOutputItem(@Nonnull UICommandBuilder commandBuilder, @Nonnull String outputGridSelector,
-                               @Nonnull MaterialQuantity output, int outputIndex) {
+    private void addOutputItem(@Nonnull UICommandBuilder commandBuilder, @Nonnull UIEventBuilder eventBuilder,
+                               @Nonnull String outputGridSelector, @Nonnull MaterialQuantity output, int outputIndex) {
         commandBuilder.append(outputGridSelector, "Pages/Lumengrid_Lumenia_RecipeInputItem.ui");
 
         String itemId = output.getItemId();
@@ -1053,6 +1085,11 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         commandBuilder.set(outputGridSelector + "[" + outputIndex + "] #ItemName.Text", itemName);
         commandBuilder.set(outputGridSelector + "[" + outputIndex + "] #Quantity.Text", "x" + output.getQuantity());
         commandBuilder.set(outputGridSelector + "[" + outputIndex + "] #ItemId.Text", itemId);
+        
+        // Add event binding for clicking on item ID in recipe output
+        eventBuilder.addEventBinding(CustomUIEventBindingType.Activating,
+                outputGridSelector + "[" + outputIndex + "] #ItemId",
+                EventData.of(GuiData.KEY_COPY_ITEM_ID, itemId), false);
     }
 
     private void updatePaginationControls(@Nonnull UICommandBuilder commandBuilder, @Nonnull UIEventBuilder eventBuilder,
@@ -1180,6 +1217,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         static final String KEY_CRAFT_PAGE_CHANGE = "CraftPageChange";
         static final String KEY_USAGE_PAGE_CHANGE = "UsagePageChange";
         static final String KEY_GIVE_ITEM = "GiveItem";
+        static final String KEY_COPY_ITEM_ID = "CopyItemId";
 
         public static final BuilderCodec<GuiData> CODEC = BuilderCodec.<GuiData>builder(GuiData.class, GuiData::new)
                 .addField(new KeyedCodec<>(KEY_SEARCH_QUERY, Codec.STRING),
@@ -1196,6 +1234,8 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                         (data, s) -> data.usagePageChange = s, data -> data.usagePageChange)
                 .addField(new KeyedCodec<>(KEY_GIVE_ITEM, Codec.STRING),
                         (data, s) -> data.giveItem = s, data -> data.giveItem)
+                .addField(new KeyedCodec<>(KEY_COPY_ITEM_ID, Codec.STRING),
+                        (data, s) -> data.copyItemId = s, data -> data.copyItemId)
                 .build();
 
         private String searchQuery;
@@ -1205,6 +1245,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         private String craftPageChange;
         private String usagePageChange;
         private String giveItem;
+        private String copyItemId;
     }
 
     private static class SearchResult {
