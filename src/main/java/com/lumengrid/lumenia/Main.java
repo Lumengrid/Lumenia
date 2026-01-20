@@ -86,11 +86,15 @@ public class Main extends JavaPlugin {
         }
 
         for (CraftingRecipe recipe : event.getLoadedAssets().values()) {
-            RECIPES.put(recipe.getId(), recipe);
+            String recipeId = recipe.getId();
+            if (RECIPES.containsKey(recipeId)) {
+                continue;
+            }
+            RECIPES.put(recipeId, recipe);
 
             // Track recipes that produce each item
             for (MaterialQuantity output : recipe.getOutputs()) {
-                ITEM_TO_RECIPES.computeIfAbsent(output.getItemId(), k -> new ArrayList<>()).add(recipe.getId());
+                ITEM_TO_RECIPES.computeIfAbsent(output.getItemId(), k -> new ArrayList<>()).add(recipeId);
             }
 
             if (getInputMethod != null) {
@@ -102,7 +106,7 @@ public class Main extends JavaPlugin {
                             // getInput() returns a single MaterialQuantity
                             MaterialQuantity input = (MaterialQuantity) inputsObj;
                             if (input != null && input.getItemId() != null) {
-                                ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipe.getId());
+                                ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipeId);
                             }
                         } else if (inputsObj instanceof List) {
                             @SuppressWarnings("unchecked")
@@ -110,7 +114,7 @@ public class Main extends JavaPlugin {
                             if (inputs != null && !inputs.isEmpty()) {
                                 for (MaterialQuantity input : inputs) {
                                     if (input != null && input.getItemId() != null) {
-                                        ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipe.getId());
+                                        ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipeId);
                                     }
                                 }
                             }
@@ -119,7 +123,7 @@ public class Main extends JavaPlugin {
                             if (inputs != null && inputs.length > 0) {
                                 for (MaterialQuantity input : inputs) {
                                     if (input != null && input.getItemId() != null) {
-                                        ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipe.getId());
+                                        ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipeId);
                                     }
                                 }
                             }
@@ -129,7 +133,7 @@ public class Main extends JavaPlugin {
                             if (inputs != null && !inputs.isEmpty()) {
                                 for (MaterialQuantity input : inputs) {
                                     if (input != null && input.getItemId() != null) {
-                                        ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipe.getId());
+                                        ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipeId);
                                     }
                                 }
                             }
@@ -151,7 +155,7 @@ public class Main extends JavaPlugin {
                                 if (inputs != null && !inputs.isEmpty()) {
                                     for (MaterialQuantity input : inputs) {
                                         if (input != null && input.getItemId() != null) {
-                                            ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipe.getId());
+                                            ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipeId);
                                         }
                                     }
                                 }
@@ -160,7 +164,7 @@ public class Main extends JavaPlugin {
                                 if (inputs != null && inputs.length > 0) {
                                     for (MaterialQuantity input : inputs) {
                                         if (input != null && input.getItemId() != null) {
-                                            ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipe.getId());
+                                            ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipeId);
                                         }
                                     }
                                 }
@@ -170,7 +174,7 @@ public class Main extends JavaPlugin {
                                 if (inputs != null && !inputs.isEmpty()) {
                                     for (MaterialQuantity input : inputs) {
                                         if (input != null && input.getItemId() != null) {
-                                            ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipe.getId());
+                                            ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipeId);
                                         }
                                     }
                                 }
@@ -183,7 +187,7 @@ public class Main extends JavaPlugin {
                 }
             }
 //            try {
-//                LOGGER.atInfo().log("LUMENIA" + recipe.getId());
+//                LOGGER.atInfo().log("LUMENIA" + recipeId);
 //                Field benchRequirementField = CraftingRecipe.class.getDeclaredField("benchRequirement");
 //                benchRequirementField.setAccessible(true);
 //
