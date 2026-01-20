@@ -260,7 +260,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
 
             // Send item ID to chat as clickable link
             String itemId = data.copyItemId;
-            player.sendMessage(Message.raw(itemId).color(java.awt.Color.GREEN));
+            player.sendMessage(Message.raw("Item ID (click to copy): " + itemId).link("https://dontpad.com/itemId=" + itemId).color(java.awt.Color.GREEN));
         }
 
     }
