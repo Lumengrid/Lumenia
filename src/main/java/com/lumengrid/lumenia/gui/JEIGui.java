@@ -11,6 +11,7 @@ import com.hypixel.hytale.common.plugin.PluginManifest;
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.protocol.BenchRequirement;
 import com.hypixel.hytale.protocol.GameMode;
+import com.hypixel.hytale.protocol.ItemResourceType;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.asset.AssetModule;
@@ -32,7 +33,7 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.lumengrid.lumenia.Main;
+import com.lumengrid.lumenia.Lumenia;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 import javax.annotation.Nonnull;
@@ -124,6 +125,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             this.usagePage = 0;
 
             UICommandBuilder commandBuilder = new UICommandBuilder();
+            commandBuilder.set("#RecipePanel #PaginationControls.Visible", false);
             UIEventBuilder eventBuilder = new UIEventBuilder();
             this.buildItemInfoPanel(ref, commandBuilder, eventBuilder, store);
             this.sendUpdate(commandBuilder, eventBuilder, false);
@@ -134,7 +136,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             UICommandBuilder commandBuilder = new UICommandBuilder();
             UIEventBuilder eventBuilder = new UIEventBuilder();
 
-            Item item = Main.ITEMS.get(this.selectedItem);
+            Item item = Lumenia.ITEMS.get(this.selectedItem);
 
             // Re-register event bindings for section buttons
             eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#RecipePanel #SectionButtons #InfoButton",
@@ -144,6 +146,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#RecipePanel #SectionButtons #UsedInButton",
                     EventData.of(GuiData.KEY_ACTIVE_SECTION, "usage"), false);
 
+            commandBuilder.set("#RecipePanel #PaginationControls.Visible", false);
             if ("info".equals(this.activeSection)) {
                 commandBuilder.set("#RecipePanel #UsageSection.Visible", false);
                 commandBuilder.set("#RecipePanel #CraftSection.Visible", false);
@@ -155,14 +158,14 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 commandBuilder.set("#RecipePanel #UsageSection.Visible", false);
                 commandBuilder.set("#RecipePanel #InfoSection.Visible", false);
                 commandBuilder.set("#RecipePanel #CraftSection.Visible", true);
-                List<String> recipeIds = Main.ITEM_TO_RECIPES.getOrDefault(this.selectedItem, Collections.emptyList());
+                List<String> recipeIds = Lumenia.ITEM_TO_RECIPES.getOrDefault(this.selectedItem, Collections.emptyList());
                 this.buildCraftSection(ref, commandBuilder, eventBuilder, store, recipeIds);
             } else if ("usage".equals(this.activeSection)) {
                 commandBuilder.set("#RecipePanel #CraftSection.Visible", false);
                 commandBuilder.set("#RecipePanel #InfoSection.Visible", false);
                 commandBuilder.set("#RecipePanel #UsageSection.Visible", true);
-                List<String> usageRecipeIds = Main.ITEM_FROM_RECIPES.getOrDefault(this.selectedItem, Collections.emptyList());
-                int validUsageCount = this.countValidUsageRecipes(usageRecipeIds);
+                List<String> usageRecipeIds = this.getUsageRecipeIdsWithResources(this.selectedItem);
+                int validUsageCount = usageRecipeIds.size();
                 this.buildUsageSection(ref, commandBuilder, eventBuilder, store, usageRecipeIds, validUsageCount);
             }
 
@@ -170,7 +173,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         }
 
         if (data.craftPageChange != null && this.selectedItem != null && !this.selectedItem.isEmpty()) {
-            List<String> recipeIds = Main.ITEM_TO_RECIPES.getOrDefault(this.selectedItem, Collections.emptyList());
+            List<String> recipeIds = Lumenia.ITEM_TO_RECIPES.getOrDefault(this.selectedItem, Collections.emptyList());
             List<String> validRecipeIds = this.getValidCraftRecipes(recipeIds);
 
             int totalCraftPages = (int) Math.ceil((double) validRecipeIds.size() / CRAFT_RECIPES_PER_PAGE);
@@ -187,10 +190,9 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         }
 
         if (data.usagePageChange != null && this.selectedItem != null && !this.selectedItem.isEmpty()) {
-            List<String> usageRecipeIds = Main.ITEM_FROM_RECIPES.getOrDefault(this.selectedItem, Collections.emptyList());
-            List<String> validUsageRecipeIds = this.getValidUsageRecipes(usageRecipeIds);
+            List<String> usageRecipeIds = this.getUsageRecipeIdsWithResources(this.selectedItem);
 
-            int totalUsagePages = (int) Math.ceil((double) validUsageRecipeIds.size() / USAGE_RECIPES_PER_PAGE);
+            int totalUsagePages = (int) Math.ceil((double) usageRecipeIds.size() / USAGE_RECIPES_PER_PAGE);
             if ("prev".equals(data.usagePageChange) && this.usagePage > 0) {
                 this.usagePage--;
             } else if ("next".equals(data.usagePageChange) && this.usagePage < totalUsagePages - 1) {
@@ -199,7 +201,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
 
             UICommandBuilder commandBuilder = new UICommandBuilder();
             UIEventBuilder eventBuilder = new UIEventBuilder();
-            int validUsageCount = validUsageRecipeIds.size();
+            int validUsageCount = usageRecipeIds.size();
             this.buildUsageSection(ref, commandBuilder, eventBuilder, store, usageRecipeIds, validUsageCount);
             this.sendUpdate(commandBuilder, eventBuilder, false);
         }
@@ -229,8 +231,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 ItemStack stack = new ItemStack(data.giveItem);
                 ItemContainer itemContainer = player.getInventory().getCombinedHotbarFirst();
                 itemContainer.addItemStack(stack);
-            } catch (Exception e) {
-                // Silently fail - item might not be creatable
+            } catch (Exception _) {
             }
         }
 
@@ -261,7 +262,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
 
             // Send item ID to chat as clickable link
             String itemId = data.copyItemId;
-            player.sendMessage(Message.raw("Item ID (click to copy): " + itemId).link("https://dontpad.com/itemId=" + itemId).color(java.awt.Color.GREEN));
+            player.sendMessage(Message.raw("Click to copy: " + itemId).link("https://dontpad.com/itemId=" + itemId).color(java.awt.Color.GREEN));
         }
 
     }
@@ -271,7 +272,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         // Clear the grid first to remove old items
         commandBuilder.clear("#ItemGrid");
 
-        Map<String, Item> itemList = new HashMap<>(Main.ITEMS);
+        Map<String, Item> itemList = new HashMap<>(Lumenia.ITEMS);
         ComponentAccessor<EntityStore> componentAccessor = store;
         Player playerComponent = componentAccessor.getComponent(ref, Player.getComponentType());
 
@@ -307,7 +308,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                         // Search in item ID if name didn't match
                         if (match == MatchResult.NONE) {
                             String itemId = result.name.toLowerCase(Locale.ENGLISH);
-                            if (itemId.contains(term)) {
+                            if (itemId.toLowerCase().contains(term)) {
                                 match = MatchResult.EXACT;
                             }
                         }
@@ -315,8 +316,20 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                         // Search in item group/type if still no match
                         if (match == MatchResult.NONE) {
                             String itemGroup = getItemGroupString(item).toLowerCase(Locale.ENGLISH);
-                            if (itemGroup.contains(term)) {
+                            if (itemGroup.toLowerCase().contains(term)) {
                                 match = MatchResult.EXACT;
+                            }
+                        }
+
+                        if (match == MatchResult.NONE && item.getResourceTypes() != null && item.getResourceTypes().length > 0) {
+                            try {
+                                String finalTerm = term;
+                                if (Arrays.stream(item.getResourceTypes())
+                                        .filter(Objects::nonNull)
+                                        .anyMatch(s -> s.id != null && s.id.toLowerCase().contains(finalTerm))) {
+                                    match = MatchResult.EXACT;
+                                }
+                            } catch (Exception _) {
                             }
                         }
                     }
@@ -371,7 +384,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             commandBuilder.set("#ItemGrid[" + rowIndex + "][" + cardsInCurrentRow + "] #ResourceIcon.Visible", false);
             commandBuilder.set("#ItemGrid[" + rowIndex + "][" + cardsInCurrentRow + "] #ItemName.TextSpans", Message.translation(entry.getValue().getTranslationKey()));
             commandBuilder.set("#ItemGrid[" + rowIndex + "][" + cardsInCurrentRow + "] #ItemId.Text", entry.getKey());
-            
+
             // Add event binding for clicking on item ID
             eventBuilder.addEventBinding(CustomUIEventBindingType.Activating,
                     "#ItemGrid[" + rowIndex + "][" + cardsInCurrentRow + "] #ItemId",
@@ -440,7 +453,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             return;
         }
 
-        Item item = Main.ITEMS.get(this.selectedItem);
+        Item item = Lumenia.ITEMS.get(this.selectedItem);
         if (item == null) {
             commandBuilder.set("#RecipePanel #ItemInfo.Visible", false);
             commandBuilder.set("#RecipePanel #SectionButtons.Visible", false);
@@ -460,7 +473,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         commandBuilder.set("#RecipePanel #ItemInfo #ResourceIcon.Visible", false);
         commandBuilder.set("#RecipePanel #ItemInfo #ItemName.TextSpans", Message.translation(item.getTranslationKey()).bold(true));
         commandBuilder.set("#RecipePanel #ItemInfo #ItemId.Text", this.selectedItem);
-        
+
         // Add event binding for clicking on item ID in info panel
         eventBuilder.addEventBinding(CustomUIEventBindingType.Activating,
                 "#RecipePanel #ItemInfo #ItemId",
@@ -528,7 +541,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Origin: " + originInfo);
                 propIndex++;
             }
-        } catch (Exception e) {
+        } catch (Exception _) {
         }
 
         String maxStackText = "Max Stack: " + item.getMaxStack();
@@ -544,10 +557,11 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                     try {
                         int rgb = ColorParseUtil.colorToARGBInt(itemQuality.getTextColor());
                         java.awt.Color color = new java.awt.Color(rgb);
-                        commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].TextSpans", 
+                        commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].TextSpans",
                                 Message.raw("Quality: ").insert(Message.translation(itemQuality.getLocalizationKey()).color(color)));
                     } catch (Exception e) {
                         // Fallback to plain text if color parsing fails
+                        Lumenia.LOGGER.atSevere().log("Lumenia: buildInfoSection: " + e.getMessage(), e);
                         String qual = I18nModule.get().getMessage(this.playerRef.getLanguage(), itemQuality.getLocalizationKey());
                         if (qual == null || qual.isEmpty()) {
                             qual = itemQuality.getLocalizationKey();
@@ -558,7 +572,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 }
 
             }
-        } catch (Exception e) {
+        } catch (Exception _) {
         }
 
         if (item.getItemLevel() > 0) {
@@ -581,7 +595,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Is Consumable: " + this.formatBoolean((Boolean) consumableObj));
                 propIndex++;
             }
-        } catch (Exception e) {
+        } catch (Exception _) {
         }
 
         try {
@@ -595,7 +609,27 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                     propIndex++;
                 }
             }
-        } catch (Exception e) {
+        } catch (Exception _) {
+        }
+
+        // Display resource types
+        try {
+            ItemResourceType[] resourceTypes = item.getResourceTypes();
+            if (resourceTypes != null && resourceTypes.length > 0) {
+                List<String> resourceTypeIds = new ArrayList<>();
+                for (ItemResourceType resourceType : resourceTypes) {
+                    if (resourceType != null && resourceType.id != null && !resourceType.id.isEmpty()) {
+                        resourceTypeIds.add(resourceType.id);
+                    }
+                }
+                if (!resourceTypeIds.isEmpty()) {
+                    commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList", "Label { Style: (FontSize: 14, TextColor: #aaaaaa, Wrap: true); }");
+                    String resourceTypesText = "Resource Types: " + String.join(", ", resourceTypeIds);
+                    commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", resourceTypesText);
+                    propIndex++;
+                }
+            }
+        } catch (Exception _) {
         }
 
         commandBuilder.appendInline("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList", "Label { Style: (FontSize: 14, TextColor: #aaaaaa); Anchor: (Height: 5); }");
@@ -659,7 +693,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
 
             int recipeIndex = 0;
             for (String recipeId : pageRecipeIds) {
-                CraftingRecipe recipe = Main.RECIPES.get(recipeId);
+                CraftingRecipe recipe = Lumenia.RECIPES.get(recipeId);
                 if (recipe == null) {
                     continue;
                 }
@@ -668,8 +702,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                     commandBuilder.append("#RecipePanel #CraftSection #CraftList", "Pages/Lumengrid_Lumenia_RecipeDisplay.ui");
                     this.buildRecipeDisplay(commandBuilder, eventBuilder, recipe, "#RecipePanel #CraftSection #CraftList", recipeIndex);
                     ++recipeIndex;
-                } catch (Exception e) {
-                    continue;
+                } catch (Exception _) {
                 }
             }
         }
@@ -681,9 +714,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         commandBuilder.clear("#RecipePanel #UsageSection #UsageList");
         commandBuilder.set("#RecipePanel #UsageSection.Visible", true);
 
-        List<String> validUsageRecipeIds = this.getValidUsageRecipes(usageRecipeIds);
-
-        if (validUsageRecipeIds.isEmpty()) {
+        if (usageRecipeIds.isEmpty()) {
             commandBuilder.set("#RecipePanel #UsageSection #NoUsageRecipes.Visible", true);
             commandBuilder.set("#RecipePanel #UsageSection #NoUsageRecipes.Text", "This item is not used in any recipes.");
             commandBuilder.set("#RecipePanel #UsageSection #UsageList.Visible", false);
@@ -692,7 +723,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             commandBuilder.set("#RecipePanel #UsageSection #NoUsageRecipes.Visible", false);
             commandBuilder.set("#RecipePanel #UsageSection #UsageList.Visible", true);
 
-            int totalUsagePages = (int) Math.ceil((double) validUsageRecipeIds.size() / USAGE_RECIPES_PER_PAGE);
+            int totalUsagePages = (int) Math.ceil((double) usageRecipeIds.size() / USAGE_RECIPES_PER_PAGE);
             if (this.usagePage >= totalUsagePages && totalUsagePages > 0) {
                 this.usagePage = totalUsagePages - 1;
             }
@@ -701,14 +732,14 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             }
 
             int startIndex = this.usagePage * USAGE_RECIPES_PER_PAGE;
-            int endIndex = Math.min(startIndex + USAGE_RECIPES_PER_PAGE, validUsageRecipeIds.size());
-            List<String> pageRecipeIds = validUsageRecipeIds.subList(startIndex, endIndex);
+            int endIndex = Math.min(startIndex + USAGE_RECIPES_PER_PAGE, usageRecipeIds.size());
+            List<String> pageRecipeIds = usageRecipeIds.subList(startIndex, endIndex);
 
-            this.updatePaginationControls(commandBuilder, eventBuilder, totalUsagePages, validUsageRecipeIds.size(), this.usagePage, "usage");
+            this.updatePaginationControls(commandBuilder, eventBuilder, totalUsagePages, usageRecipeIds.size(), this.usagePage, "usage");
 
             int recipeIndex = 0;
             for (String recipeId : pageRecipeIds) {
-                CraftingRecipe recipe = Main.RECIPES.get(recipeId);
+                CraftingRecipe recipe = Lumenia.RECIPES.get(recipeId);
                 if (recipe == null) {
                     continue;
                 }
@@ -717,8 +748,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                     commandBuilder.append("#RecipePanel #UsageSection #UsageList", "Pages/Lumengrid_Lumenia_RecipeDisplay.ui");
                     this.buildRecipeDisplay(commandBuilder, eventBuilder, recipe, "#RecipePanel #UsageSection #UsageList", recipeIndex);
                     ++recipeIndex;
-                } catch (Exception e) {
-                    continue;
+                } catch (Exception _) {
                 }
             }
         }
@@ -727,23 +757,20 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
     private List<String> getValidCraftRecipes(List<String> recipeIds) {
         List<String> validRecipeIds = new ArrayList<>();
         for (String recipeId : recipeIds) {
-            CraftingRecipe recipe = Main.RECIPES.get(recipeId);
+            CraftingRecipe recipe = Lumenia.RECIPES.get(recipeId);
             if (recipe == null) {
                 continue;
             }
 
             boolean itemFoundInOutputs = false;
             for (MaterialQuantity output : recipe.getOutputs()) {
-                if (output != null) {
-                    Main.LOGGER.atInfo().log("output "  + output.getItemId());
+                if (output == null) {
+                    continue;
                 }
                 if (output != null && this.selectedItem.equals(output.getItemId())) {
                     itemFoundInOutputs = true;
                     break;
                 }
-            }
-            for (MaterialQuantity input : recipe.getInput()) {
-                Main.LOGGER.atInfo().log("input " + input.getResourceTypeId());
             }
             if (itemFoundInOutputs) {
                 validRecipeIds.add(recipeId);
@@ -752,10 +779,50 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         return validRecipeIds;
     }
 
+    /**
+     * Gets all usage recipe IDs for an item, including recipes that use items from the same ResourceType
+     * Returns a distinct list of recipe IDs (no duplicates)
+     */
+    private List<String> getUsageRecipeIdsWithResources(String itemId) {
+        if (itemId == null || itemId.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Use a LinkedHashSet to avoid duplicate recipe IDs while preserving insertion order
+        Set<String> allRecipeIds = new LinkedHashSet<>();
+
+        // First, add recipes that directly use this item
+        List<String> directRecipes = Lumenia.ITEM_FROM_RECIPES.getOrDefault(itemId, Collections.emptyList());
+        allRecipeIds.addAll(directRecipes);
+
+        Item item = Lumenia.ITEMS.get(itemId);
+        if (item != null) {
+            try {
+                // Get item categories
+                ItemResourceType[] resources = item.getResourceTypes();
+                if (resources != null) {
+                    for (ItemResourceType resource : resources) {
+                        try {
+                            if (resource.id != null && !resource.id.isEmpty()) {
+                                List<String> recipes = Lumenia.ITEM_FROM_RECIPES.getOrDefault(resource.id, Collections.emptyList());
+                                allRecipeIds.addAll(recipes);
+                            }
+                        } catch (Exception _) {
+                        }
+                    }
+                }
+            } catch (Exception _) {
+            }
+        }
+
+        // Return as distinct list (LinkedHashSet already ensures no duplicates)
+        return new ArrayList<>(allRecipeIds);
+    }
+
     private List<String> getValidUsageRecipes(List<String> usageRecipeIds) {
         List<String> validUsageRecipeIds = new ArrayList<>();
         for (String usageRecipeId : usageRecipeIds) {
-            var usageRecipe = Main.RECIPES.get(usageRecipeId);
+            var usageRecipe = Lumenia.RECIPES.get(usageRecipeId);
             if (usageRecipe == null) continue;
 
             Object inputsObj = null;
@@ -769,11 +836,10 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                         Method inputMethod = CraftingRecipe.class.getMethod(methodName);
                         inputsObj = inputMethod.invoke(usageRecipe);
                         if (inputsObj != null) break;
-                    } catch (NoSuchMethodException ignored) {
-                    } catch (Exception ignored) {
+                    } catch (Exception _) {
                     }
                 }
-            } catch (Exception e) {
+            } catch (Exception _) {
             }
 
             boolean itemFoundInInputs = false;
@@ -844,7 +910,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             commandBuilder.set(contentSelector + " #BenchInfo #BenchId.Text", bench.id);
 
             String benchItemId = this.findBenchItemId(bench.id);
-            if (benchItemId != null && Main.ITEMS.containsKey(benchItemId)) {
+            if (benchItemId != null && Lumenia.ITEMS.containsKey(benchItemId)) {
                 commandBuilder.set(contentSelector + " #BenchInfo #BenchIcon.ItemId", "");
                 commandBuilder.set(contentSelector + " #BenchInfo #BenchIcon.ItemId", benchItemId);
                 commandBuilder.set(contentSelector + " #BenchInfo #BenchIcon.Visible", true);
@@ -873,7 +939,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 } catch (Exception ignored) {
                 }
             }
-        } catch (Exception e) {
+        } catch (Exception _) {
         }
 
         int inputIndex = 0;
@@ -1046,6 +1112,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ResourceIcon.Visible", false);
             ResourceType resource = ResourceType.getAssetMap().getAsset(resourceType);
             if (resource != null && !resource.getIcon().isEmpty()) {
+                commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemIcon.ItemId", resourceType);
                 commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ResourceIcon.AssetPath", "");
                 commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ResourceIcon.AssetPath", resource.getIcon());
                 commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ResourceIcon.Visible", true);
@@ -1054,7 +1121,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
 
         String itemName = displayId;
         if (itemId != null && !itemId.isEmpty()) {
-            Item inputItem = Main.ITEMS.get(itemId);
+            Item inputItem = Lumenia.ITEMS.get(itemId);
             if (inputItem != null && inputItem.getTranslationKey() != null) {
                 try {
                     String translatedName = I18nModule.get().getMessage(this.playerRef.getLanguage(), inputItem.getTranslationKey());
@@ -1072,12 +1139,18 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemName.Text", itemName);
         commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #Quantity.Text", "x" + input.getQuantity());
         commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemId.Text", displayType + " " + displayId);
-        
+
         // Add event binding for clicking on item ID in recipe input
         if (itemId != null && !itemId.isEmpty()) {
             eventBuilder.addEventBinding(CustomUIEventBindingType.Activating,
                     inputGridSelector + "[" + inputIndex + "] #ItemId",
                     EventData.of(GuiData.KEY_COPY_ITEM_ID, itemId), false);
+        } else {
+            if (resourceType != null && !resourceType.isEmpty()) {
+                eventBuilder.addEventBinding(CustomUIEventBindingType.Activating,
+                        inputGridSelector + "[" + inputIndex + "] #ItemId",
+                        EventData.of(GuiData.KEY_COPY_ITEM_ID, resourceType), false);
+            }
         }
     }
 
@@ -1094,7 +1167,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         commandBuilder.set(outputGridSelector + "[" + outputIndex + "] #ItemIcon.ItemId", itemId);
 
         String itemName = itemId;
-        Item outputItem = Main.ITEMS.get(itemId);
+        Item outputItem = Lumenia.ITEMS.get(itemId);
         if (outputItem != null && outputItem.getTranslationKey() != null) {
             try {
                 String translatedName = I18nModule.get().getMessage(this.playerRef.getLanguage(), outputItem.getTranslationKey());
@@ -1109,7 +1182,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         commandBuilder.set(outputGridSelector + "[" + outputIndex + "] #ItemName.Text", itemName);
         commandBuilder.set(outputGridSelector + "[" + outputIndex + "] #Quantity.Text", "x" + output.getQuantity());
         commandBuilder.set(outputGridSelector + "[" + outputIndex + "] #ItemId.Text", itemId);
-        
+
         // Add event binding for clicking on item ID in recipe output
         eventBuilder.addEventBinding(CustomUIEventBindingType.Activating,
                 outputGridSelector + "[" + outputIndex + "] #ItemId",
@@ -1158,13 +1231,13 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         };
 
         for (String pattern : patterns) {
-            if (Main.ITEMS.containsKey(pattern)) {
+            if (Lumenia.ITEMS.containsKey(pattern)) {
                 return pattern;
             }
         }
 
         String lowerBenchId = benchId.toLowerCase();
-        for (String itemId : Main.ITEMS.keySet()) {
+        for (String itemId : Lumenia.ITEMS.keySet()) {
             String lowerItemId = itemId.toLowerCase();
             if (lowerItemId.contains(lowerBenchId) || lowerBenchId.contains(lowerItemId)) {
                 if (lowerItemId.contains("bench") || lowerItemId.contains("workbench") || lowerItemId.contains("crafting")) {
@@ -1223,12 +1296,13 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                     }
                 }
             } catch (Exception e) {
-                // Ignore manifest errors
+                Lumenia.LOGGER.atSevere().log("Lumenia: resolveItemOrigin ignoreManifestError: " + e.getMessage(), e);
             }
 
             // Fallback to pack name
             return "Mod: " + packName;
         } catch (Exception e) {
+            Lumenia.LOGGER.atSevere().log("Lumenia: resolveItemOrigin: " + e.getMessage(), e);
             return "vanilla";
         }
     }

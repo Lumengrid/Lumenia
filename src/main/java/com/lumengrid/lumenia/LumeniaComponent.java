@@ -15,11 +15,11 @@ public class LumeniaComponent implements Component<EntityStore> {
     public boolean wasWalkingLastTick = false;
 
     public static ComponentType<EntityStore, LumeniaComponent> getComponentType() {
-        return Main.getInstance().getComponentType();
+        return Lumenia.getInstance().getComponentType();
     }
 
     private LumeniaComponent() {
-        this.openJeiKeybind = Main.getInstance().config.get().defaultOpenJeiKeybind;
+        this.openJeiKeybind = Lumenia.getInstance().config.get().defaultOpenJeiKeybind;
     }
 
     public LumeniaComponent(boolean openJeiKeybind) {;

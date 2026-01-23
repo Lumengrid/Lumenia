@@ -20,21 +20,20 @@ import com.lumengrid.lumenia.interactions.OpenLumeniaBookInteraction;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
-import java.lang.reflect.Field;
 import java.util.*;
 
-public class Main extends JavaPlugin {
-    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+public class Lumenia extends JavaPlugin {
+    public static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     public static Map<String, Item> ITEMS = new HashMap<>();
     public static Map<String, CraftingRecipe> RECIPES = new HashMap<>();
     public static Map<String, List<String>> ITEM_TO_RECIPES = new HashMap<>(); // Item ID -> Recipe IDs that produce it
     public static Map<String, List<String>> ITEM_FROM_RECIPES = new HashMap<>(); // Item ID -> Recipe IDs that use it as input
     private static final Map<String, BenchRecipeRegistry> registries = new Object2ObjectOpenHashMap<>();
-    private static Main instance;
+    private static Lumenia instance;
     public final Config<LumeniaConfig> config;
     private com.hypixel.hytale.component.ComponentType<com.hypixel.hytale.server.core.universe.world.storage.EntityStore, LumeniaComponent> componentType;
 
-    public static Main getInstance() {
+    public static Lumenia getInstance() {
         return instance;
     }
 
@@ -42,7 +41,7 @@ public class Main extends JavaPlugin {
         return this.componentType;
     }
 
-    public Main(@NonNullDecl JavaPluginInit init) {
+    public Lumenia(@NonNullDecl JavaPluginInit init) {
         super(init);
         this.config = this.withConfig("Lumenia", LumeniaConfig.CODEC);
     }
@@ -55,9 +54,9 @@ public class Main extends JavaPlugin {
 
         this.componentType = this.getEntityStoreRegistry().registerComponent(LumeniaComponent.class, "Lumengrid_Lumenia", LumeniaComponent.CODEC);
 
-        this.getEventRegistry().register(LoadedAssetsEvent.class, Item.class, Main::onItemAssetLoad);
-        this.getEventRegistry().register(LoadedAssetsEvent.class, CraftingRecipe.class, Main::onRecipeLoad);
-        this.getEventRegistry().register(RemovedAssetsEvent.class, CraftingRecipe.class, Main::onRecipeRemove);
+        this.getEventRegistry().register(LoadedAssetsEvent.class, Item.class, Lumenia::onItemAssetLoad);
+        this.getEventRegistry().register(LoadedAssetsEvent.class, CraftingRecipe.class, Lumenia::onRecipeLoad);
+        this.getEventRegistry().register(RemovedAssetsEvent.class, CraftingRecipe.class, Lumenia::onRecipeRemove);
 
         this.getCommandRegistry().registerCommand(new OpenJEICommand());
 
@@ -81,8 +80,7 @@ public class Main extends JavaPlugin {
         BenchRequirement[] benchField = new BenchRequirement[] { benchReq };
         try {
             getInputMethod = CraftingRecipe.class.getMethod("getInput");
-        } catch (NoSuchMethodException e) {
-            // Method doesn't exist - recipe inputs tracking will be disabled
+        } catch (NoSuchMethodException _) {
         }
 
         for (CraftingRecipe recipe : event.getLoadedAssets().values()) {
@@ -108,13 +106,22 @@ public class Main extends JavaPlugin {
                             if (input != null && input.getItemId() != null) {
                                 ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipeId);
                             }
+                            if (input != null && input.getResourceTypeId() != null) {
+                                ITEM_FROM_RECIPES.computeIfAbsent(input.getResourceTypeId(), k -> new ArrayList<>()).add(recipeId);
+                            }
                         } else if (inputsObj instanceof List) {
                             @SuppressWarnings("unchecked")
                             List<MaterialQuantity> inputs = (List<MaterialQuantity>) inputsObj;
                             if (inputs != null && !inputs.isEmpty()) {
                                 for (MaterialQuantity input : inputs) {
-                                    if (input != null && input.getItemId() != null) {
+                                    if (input == null) {
+                                        continue;
+                                    }
+                                    if (input.getItemId() != null) {
                                         ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipeId);
+                                    }
+                                    if (input.getResourceTypeId() != null) {
+                                        ITEM_FROM_RECIPES.computeIfAbsent(input.getResourceTypeId(), k -> new ArrayList<>()).add(recipeId);
                                     }
                                 }
                             }
@@ -122,8 +129,14 @@ public class Main extends JavaPlugin {
                             MaterialQuantity[] inputs = (MaterialQuantity[]) inputsObj;
                             if (inputs != null && inputs.length > 0) {
                                 for (MaterialQuantity input : inputs) {
-                                    if (input != null && input.getItemId() != null) {
+                                    if (input == null) {
+                                        continue;
+                                    }
+                                    if (input.getItemId() != null) {
                                         ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipeId);
+                                    }
+                                    if (input.getResourceTypeId() != null) {
+                                        ITEM_FROM_RECIPES.computeIfAbsent(input.getResourceTypeId(), k -> new ArrayList<>()).add(recipeId);
                                     }
                                 }
                             }
@@ -132,15 +145,21 @@ public class Main extends JavaPlugin {
                             java.util.Collection<MaterialQuantity> inputs = (java.util.Collection<MaterialQuantity>) inputsObj;
                             if (inputs != null && !inputs.isEmpty()) {
                                 for (MaterialQuantity input : inputs) {
-                                    if (input != null && input.getItemId() != null) {
+                                    if (input == null) {
+                                        continue;
+                                    }
+                                    if (input.getItemId() != null) {
                                         ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipeId);
+                                    }
+                                    if (input.getResourceTypeId() != null) {
+                                        ITEM_FROM_RECIPES.computeIfAbsent(input.getResourceTypeId(), k -> new ArrayList<>()).add(recipeId);
                                     }
                                 }
                             }
                         }
                     }
                 } catch (Exception e) {
-                    // Failed to invoke method - skip this recipe's inputs
+                    Lumenia.LOGGER.atSevere().log("Lumenia: onRecipeLoad: " + e.getMessage(), e);
                 }
             } else {
                 String[] methodNames = {"getInputs", "getIngredients", "getMaterials", "getRecipeInputs", "getRequiredMaterials"};
@@ -154,8 +173,14 @@ public class Main extends JavaPlugin {
                                 List<MaterialQuantity> inputs = (List<MaterialQuantity>) inputsObj;
                                 if (inputs != null && !inputs.isEmpty()) {
                                     for (MaterialQuantity input : inputs) {
-                                        if (input != null && input.getItemId() != null) {
+                                        if (input == null) {
+                                            continue;
+                                        }
+                                        if (input.getItemId() != null) {
                                             ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipeId);
+                                        }
+                                        if (input.getResourceTypeId() != null) {
+                                            ITEM_FROM_RECIPES.computeIfAbsent(input.getResourceTypeId(), k -> new ArrayList<>()).add(recipeId);
                                         }
                                     }
                                 }
@@ -163,8 +188,14 @@ public class Main extends JavaPlugin {
                                 MaterialQuantity[] inputs = (MaterialQuantity[]) inputsObj;
                                 if (inputs != null && inputs.length > 0) {
                                     for (MaterialQuantity input : inputs) {
-                                        if (input != null && input.getItemId() != null) {
+                                        if (input == null) {
+                                            continue;
+                                        }
+                                        if (input.getItemId() != null) {
                                             ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipeId);
+                                        }
+                                        if (input.getResourceTypeId() != null) {
+                                            ITEM_FROM_RECIPES.computeIfAbsent(input.getResourceTypeId(), k -> new ArrayList<>()).add(recipeId);
                                         }
                                     }
                                 }
@@ -173,8 +204,14 @@ public class Main extends JavaPlugin {
                                 java.util.Collection<MaterialQuantity> inputs = (java.util.Collection<MaterialQuantity>) inputsObj;
                                 if (inputs != null && !inputs.isEmpty()) {
                                     for (MaterialQuantity input : inputs) {
-                                        if (input != null && input.getItemId() != null) {
+                                        if (input == null) {
+                                            continue;
+                                        }
+                                        if (input.getItemId() != null) {
                                             ITEM_FROM_RECIPES.computeIfAbsent(input.getItemId(), k -> new ArrayList<>()).add(recipeId);
+                                        }
+                                        if (input.getResourceTypeId() != null) {
+                                            ITEM_FROM_RECIPES.computeIfAbsent(input.getResourceTypeId(), k -> new ArrayList<>()).add(recipeId);
                                         }
                                     }
                                 }
@@ -186,25 +223,6 @@ public class Main extends JavaPlugin {
                     }
                 }
             }
-//            try {
-//                LOGGER.atInfo().log("LUMENIA" + recipeId);
-//                Field benchRequirementField = CraftingRecipe.class.getDeclaredField("benchRequirement");
-//                benchRequirementField.setAccessible(true);
-//
-//                if (recipe.getBenchRequirement() != null && Arrays.stream(recipe.getBenchRequirement())
-//                        .noneMatch(bench -> bench != null && CraftingRecipe.FIELDCRAFT_REQUIREMENT.equals(bench.id))) {
-//                    for (BenchRequirement benchRequirement : recipe.getBenchRequirement()) {
-//                        BenchRecipeRegistry benchRecipeRegistry = registries.computeIfAbsent(CraftingRecipe.FIELDCRAFT_REQUIREMENT, BenchRecipeRegistry::new);
-//                        benchRequirementField.set(recipe, benchField);
-//
-//                        benchRecipeRegistry.addRecipe(benchRequirement, recipe);
-//                        LOGGER.atInfo().log("LUMENIA " + benchRequirement.id + " " + benchRequirement.type.toString() + " " + benchRequirement.requiredTierLevel);
-//                    }
-//                }
-//            } catch (Exception e) {
-//                LOGGER.atSevere().log("LUMENIA" +e.getMessage());
-//            }
-
         }
         computeBenchRecipeRegistries();
     }
@@ -259,8 +277,7 @@ public class Main extends JavaPlugin {
                             }
                         }
                     }
-                } catch (Exception e) {
-                    // Method not found - skip input cleanup
+                } catch (Exception _) {
                 }
             }
         }

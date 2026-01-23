@@ -3,6 +3,7 @@ package com.lumengrid.lumenia.commands;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
+import com.hypixel.hytale.protocol.ItemResourceType;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
@@ -16,13 +17,15 @@ import com.hypixel.hytale.server.core.modules.i18n.I18nModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.lumengrid.lumenia.Main;
+import com.lumengrid.lumenia.Lumenia;
 import com.lumengrid.lumenia.gui.JEIGui;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import static com.hypixel.hytale.server.core.command.commands.player.inventory.InventorySeeCommand.MESSAGE_COMMANDS_ERRORS_PLAYER_NOT_IN_WORLD;
@@ -72,7 +75,7 @@ public class OpenJEICommand extends AbstractCommand {
                     if (itemInput != null && !itemInput.isEmpty()) {
                         String language = playerRefComponent.getLanguage();
                         String foundItemId = findItemId(itemInput, language);
-                        
+
                         if (foundItemId != null) {
                             // Found the item - use it as search query and auto-select it
                             defaultSearch = itemInput;
@@ -84,8 +87,8 @@ public class OpenJEICommand extends AbstractCommand {
                         }
                     }
 
-                    player.getPageManager().openCustomPage(ref, store, 
-                        new JEIGui(playerRefComponent, CustomPageLifetime.CanDismiss, defaultSearch, selectedItemId));
+                    player.getPageManager().openCustomPage(ref, store,
+                            new JEIGui(playerRefComponent, CustomPageLifetime.CanDismiss, defaultSearch, selectedItemId));
                 }, world);
             } else {
                 context.sendMessage(MESSAGE_COMMANDS_ERRORS_PLAYER_NOT_IN_WORLD);
@@ -101,22 +104,27 @@ public class OpenJEICommand extends AbstractCommand {
      */
     private String findItemId(String search, String language) {
         // First try exact match
-        if (Main.ITEMS.containsKey(search)) {
+        if (Lumenia.ITEMS.containsKey(search)) {
             return search;
         }
 
         // Search by translated name
         search = search.toLowerCase();
-        for (Map.Entry<String, Item> entry : Main.ITEMS.entrySet()) {
+        String finalSearch = search;
+        for (Map.Entry<String, Item> entry : Lumenia.ITEMS.entrySet()) {
             String translationKey = entry.getValue().getTranslationKey();
             String translatedName = I18nModule.get().getMessage(language, translationKey);
             if (translatedName != null && translatedName.toLowerCase().contains(search)) {
                 return entry.getKey();
             }
+            if (Arrays.stream(entry.getValue().getResourceTypes())
+                    .filter(Objects::nonNull)
+                    .anyMatch(s -> s.id != null && s.id.toLowerCase().contains(finalSearch))) {
+                return entry.getKey();
+            }
         }
-
         // Search by partial ID match
-        for (String itemId : Main.ITEMS.keySet()) {
+        for (String itemId : Lumenia.ITEMS.keySet()) {
             if (itemId.toLowerCase().contains(search)) {
                 return itemId;
             }

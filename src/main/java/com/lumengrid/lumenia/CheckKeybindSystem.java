@@ -20,7 +20,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class CheckKeybindSystem extends EntityTickingSystem<EntityStore> {
-    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     @Override
     public void tick(float dt, int index, @Nonnull ArchetypeChunk<EntityStore> archetypeChunk, @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer) {
@@ -46,7 +45,7 @@ public class CheckKeybindSystem extends EntityTickingSystem<EntityStore> {
 
             if (movementStates.walking) {
                 boolean pageOpen = player.getPageManager().getCustomPage() != null;
-                boolean keybindEnabled = Main.getInstance().config.get().defaultOpenJeiKeybind;
+                boolean keybindEnabled = Lumenia.getInstance().config.get().defaultOpenJeiKeybind;
                 if (!pageOpen && keybindEnabled) {
                     try {
                         PageManager pageManager = player.getPageManager();
@@ -54,12 +53,12 @@ public class CheckKeybindSystem extends EntityTickingSystem<EntityStore> {
                             pageManager.openCustomPage(ref, store, new JEIGui(playerRefComponent, CustomPageLifetime.CanDismiss));
                         }
                     } catch (Exception e) {
-                        LOGGER.atSevere().log("Lumenia: Failed to open JEI page: " + e.getMessage(), e);
+                        Lumenia.LOGGER.atSevere().log("Lumenia: Failed to open JEI page: " + e.getMessage(), e);
                     }
                 }
             }
         } catch (Exception e) {
-            LOGGER.atSevere().log("Lumenia: Error in CheckKeybindSystem: " + e.getMessage(), e);
+            Lumenia.LOGGER.atSevere().log("Lumenia: Error in CheckKeybindSystem: " + e.getMessage(), e);
         }
     }
 

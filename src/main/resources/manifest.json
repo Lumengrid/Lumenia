@@ -1,7 +1,7 @@
 {
   "Group": "Lumengrid",
   "Name": "Lumenia",
-  "Version": "1.0.9",
+  "Version": "1.0.10",
   "Description": "Lumenia mod contains a lot of QOL additions",
   "Authors": [
     {
@@ -15,6 +15,6 @@
   },
   "OptionalDependencies": {},
   "DisabledByDefault": false,
-  "Main": "com.lumengrid.lumenia.Main",
+  "Main": "com.lumengrid.lumenia.Lumenia",
   "IncludesAssetPack": true
 }
