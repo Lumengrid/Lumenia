@@ -12,6 +12,11 @@ Button {
     )
   );
 
+    AssetImage #ResourceIcon {
+      Anchor: (Width: 64, Height: 64, Bottom: 5);
+      Visible: false;
+    }
+
   ItemIcon #ItemIcon {
     Anchor: (Width: 64, Height: 64, Bottom: 5);
     Visible: true;

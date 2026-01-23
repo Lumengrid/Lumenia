@@ -6,7 +6,10 @@ Group {
   Group {
     LayoutMode: Left;
     Anchor: (Height: 44);
-
+  AssetImage #ResourceIcon {
+          Anchor: (Width: 48, Height: 48);
+          Visible: false;
+        }
     ItemIcon #ItemIcon {
       Anchor: (Width: 48, Height: 48);
       Visible: true;

@@ -16,6 +16,7 @@ import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.asset.AssetModule;
 import com.hypixel.hytale.server.core.asset.type.item.config.CraftingRecipe;
 import com.hypixel.hytale.server.core.asset.type.item.config.ItemQuality;
+import com.hypixel.hytale.server.core.asset.type.item.config.ResourceType;
 import com.hypixel.hytale.server.core.asset.util.ColorParseUtil;
 import com.hypixel.hytale.server.core.inventory.MaterialQuantity;
 import com.hypixel.hytale.server.core.Message;
@@ -366,6 +367,8 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             commandBuilder.append("#ItemGrid[" + rowIndex + "]", "Pages/Lumengrid_Lumenia_ItemIcon.ui");
             commandBuilder.set("#ItemGrid[" + rowIndex + "][" + cardsInCurrentRow + "] #ItemIcon.ItemId", entry.getKey());
             commandBuilder.set("#ItemGrid[" + rowIndex + "][" + cardsInCurrentRow + "] #ItemIcon.Visible", true);
+            commandBuilder.set("#ItemGrid[" + rowIndex + "][" + cardsInCurrentRow + "] #ResourceIcon.AssetPath", "");
+            commandBuilder.set("#ItemGrid[" + rowIndex + "][" + cardsInCurrentRow + "] #ResourceIcon.Visible", false);
             commandBuilder.set("#ItemGrid[" + rowIndex + "][" + cardsInCurrentRow + "] #ItemName.TextSpans", Message.translation(entry.getValue().getTranslationKey()));
             commandBuilder.set("#ItemGrid[" + rowIndex + "][" + cardsInCurrentRow + "] #ItemId.Text", entry.getKey());
             
@@ -453,6 +456,8 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         commandBuilder.set("#RecipePanel #ItemInfo #ItemIcon.ItemId", "");
         commandBuilder.set("#RecipePanel #ItemInfo #ItemIcon.ItemId", this.selectedItem);
         commandBuilder.set("#RecipePanel #ItemInfo #ItemIcon.Visible", true);
+        commandBuilder.set("#RecipePanel #ItemInfo #ResourceIcon.AssetPath", "");
+        commandBuilder.set("#RecipePanel #ItemInfo #ResourceIcon.Visible", false);
         commandBuilder.set("#RecipePanel #ItemInfo #ItemName.TextSpans", Message.translation(item.getTranslationKey()).bold(true));
         commandBuilder.set("#RecipePanel #ItemInfo #ItemId.Text", this.selectedItem);
         
@@ -723,16 +728,23 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         List<String> validRecipeIds = new ArrayList<>();
         for (String recipeId : recipeIds) {
             CraftingRecipe recipe = Main.RECIPES.get(recipeId);
-            if (recipe == null) continue;
+            if (recipe == null) {
+                continue;
+            }
 
             boolean itemFoundInOutputs = false;
             for (MaterialQuantity output : recipe.getOutputs()) {
+                if (output != null) {
+                    Main.LOGGER.atInfo().log("output "  + output.getItemId());
+                }
                 if (output != null && this.selectedItem.equals(output.getItemId())) {
                     itemFoundInOutputs = true;
                     break;
                 }
             }
-
+            for (MaterialQuantity input : recipe.getInput()) {
+                Main.LOGGER.atInfo().log("input " + input.getResourceTypeId());
+            }
             if (itemFoundInOutputs) {
                 validRecipeIds.add(recipeId);
             }
@@ -1010,6 +1022,8 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         if ((itemId == null || itemId.isEmpty()) && (resourceType == null || resourceType.isEmpty())) {
             commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemIcon.ItemId", "");
             commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemIcon.Visible", false);
+            commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ResourceIcon.AssetPath", "");
+            commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ResourceIcon.Visible", false);
             commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemName.Text", "Unknown Material");
             commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #Quantity.Text", "x" + input.getQuantity());
             commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemId.Text", "ID: (unknown)");
@@ -1023,9 +1037,19 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemIcon.ItemId", "");
             commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemIcon.ItemId", itemId);
             commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemIcon.Visible", true);
+            commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ResourceIcon.AssetPath", "");
+            commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ResourceIcon.Visible", false);
         } else {
             commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemIcon.ItemId", "");
             commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ItemIcon.Visible", false);
+            commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ResourceIcon.AssetPath", "");
+            commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ResourceIcon.Visible", false);
+            ResourceType resource = ResourceType.getAssetMap().getAsset(resourceType);
+            if (resource != null && !resource.getIcon().isEmpty()) {
+                commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ResourceIcon.AssetPath", "");
+                commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ResourceIcon.AssetPath", resource.getIcon());
+                commandBuilder.set(inputGridSelector + "[" + inputIndex + "] #ResourceIcon.Visible", true);
+            }
         }
 
         String itemName = displayId;

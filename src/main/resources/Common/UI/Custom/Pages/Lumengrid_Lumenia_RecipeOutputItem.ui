@@ -2,7 +2,10 @@ Group {
   LayoutMode: Top;
   Padding: (Right: 5);
   Anchor: (Width: 64, Height: 80);
-
+  AssetImage #ResourceIcon {
+    Anchor: (Width: 48, Height: 64);
+    Visible: false;
+  }
   ItemIcon #ItemIcon {
     Anchor: (Width: 64, Height: 64);
     Visible: true;

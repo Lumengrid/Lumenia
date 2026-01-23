@@ -17,6 +17,11 @@ Group #RecipePanel {
         LayoutMode: Left;
         FlexWeight: 1;
 
+        AssetImage #ResourceIcon {
+          Anchor: (Width: 48, Height: 48);
+          Visible: false;
+        }
+
         ItemIcon #ItemIcon {
           Anchor: (Width: 48, Height: 48);
           Visible: true;
