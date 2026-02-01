@@ -6,7 +6,6 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
-import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.MovementStates;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -15,6 +14,7 @@ import com.hypixel.hytale.server.core.entity.movement.MovementStatesComponent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.lumengrid.lumenia.gui.JEIGui;
+import com.lumengrid.lumenia.LumeniaComponent;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -45,8 +45,21 @@ public class CheckKeybindSystem extends EntityTickingSystem<EntityStore> {
 
             if (movementStates.walking) {
                 boolean pageOpen = player.getPageManager().getCustomPage() != null;
-                boolean keybindEnabled = Lumenia.getInstance().config.get().defaultOpenJeiKeybind;
-                if (!pageOpen && keybindEnabled) {
+                boolean pluginKeybindEnabled = Lumenia.getInstance().config.get().defaultOpenJeiKeybind;
+                if (!pluginKeybindEnabled) {
+                    return;
+                }
+
+                LumeniaComponent component = store.getComponent(ref, LumeniaComponent.getComponentType());
+                boolean playerKeybindEnabled = true;
+                if (component != null) {
+                    playerKeybindEnabled = component.openJeiKeybind;
+                } else {
+                    component = new LumeniaComponent(true);
+                    commandBuffer.addComponent(ref, LumeniaComponent.getComponentType(), component);
+                }
+                
+                if (!pageOpen && playerKeybindEnabled) {
                     try {
                         PageManager pageManager = player.getPageManager();
                         if (pageManager.getCustomPage() == null) {

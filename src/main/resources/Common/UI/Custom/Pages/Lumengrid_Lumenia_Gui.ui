@@ -12,6 +12,17 @@ $C.@PageOverlay {
         }
 
         $C.@HeaderSearch {}
+
+        Group #KeybindSettings {
+          LayoutMode: Left;
+          Padding: (Top: 5, Left: 20, Right: 10);
+          Anchor: (Height: 30);
+
+          $C.@CheckBoxWithLabel #EnableKeybindCheckbox {
+            @Text = "Enable keybind";
+            Anchor: (Height: 20);
+          }
+        }
       }
     }
 

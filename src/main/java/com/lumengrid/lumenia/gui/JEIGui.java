@@ -34,6 +34,7 @@ import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.lumengrid.lumenia.Lumenia;
+import com.lumengrid.lumenia.LumeniaComponent;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 import javax.annotation.Nonnull;
@@ -88,6 +89,21 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         // Event binding for search
         uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#SearchInput",
                 EventData.of("@SearchQuery", "#SearchInput.Value"), false);
+
+        boolean pluginKeybindEnabled = Lumenia.getInstance().config.get().defaultOpenJeiKeybind;
+        if (pluginKeybindEnabled) {
+            uiCommandBuilder.set("#Title #KeybindSettings.Visible", true);
+            LumeniaComponent component = store.getComponent(ref, LumeniaComponent.getComponentType());
+            boolean playerKeybindEnabled = true;
+            if (component != null) {
+                playerKeybindEnabled = component.openJeiKeybind;
+            }
+            uiCommandBuilder.set("#Title #KeybindSettings #EnableKeybindCheckbox #CheckBox.Value", playerKeybindEnabled);
+            uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#Title #KeybindSettings #EnableKeybindCheckbox #CheckBox",
+                    EventData.of(GuiData.KEY_TOGGLE_KEYBIND, "#Title #KeybindSettings #EnableKeybindCheckbox #CheckBox.Value"), false);
+        } else {
+            uiCommandBuilder.set("#Title #KeybindSettings.Visible", false);
+        }
 
         // Build item grid and recipe panel - the search query is already set, so filtering will happen
         this.buildItemGrid(ref, uiCommandBuilder, uiEventBuilder, store);
@@ -263,6 +279,22 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             // Send item ID to chat as clickable link
             String itemId = data.copyItemId;
             player.sendMessage(Message.raw("Click to copy: " + itemId).link("https://dontpad.com/itemId=" + itemId).color(java.awt.Color.GREEN));
+        }
+
+        if (data.toggleKeybind != null) {
+            if (!ref.isValid()) {
+                return;
+            }
+
+            // Update the player's component with the new keybind state
+            LumeniaComponent component = store.getComponent(ref, LumeniaComponent.getComponentType());
+            if (component != null) {
+                component.openJeiKeybind = data.toggleKeybind;
+            } else {
+                // Create component if it doesn't exist
+                component = new LumeniaComponent(data.toggleKeybind);
+                store.addComponent(ref, LumeniaComponent.getComponentType(), component);
+            }
         }
 
     }
@@ -560,7 +592,6 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                         commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].TextSpans",
                                 Message.raw("Quality: ").insert(Message.translation(itemQuality.getLocalizationKey()).color(color)));
                     } catch (Exception e) {
-                        // Fallback to plain text if color parsing fails
                         Lumenia.LOGGER.atSevere().log("Lumenia: buildInfoSection: " + e.getMessage(), e);
                         String qual = I18nModule.get().getMessage(this.playerRef.getLanguage(), itemQuality.getLocalizationKey());
                         if (qual == null || qual.isEmpty()) {
@@ -1316,6 +1347,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         static final String KEY_USAGE_PAGE_CHANGE = "UsagePageChange";
         static final String KEY_GIVE_ITEM = "GiveItem";
         static final String KEY_COPY_ITEM_ID = "CopyItemId";
+        static final String KEY_TOGGLE_KEYBIND = "@ToggleKeybind";
 
         public static final BuilderCodec<GuiData> CODEC = BuilderCodec.<GuiData>builder(GuiData.class, GuiData::new)
                 .addField(new KeyedCodec<>(KEY_SEARCH_QUERY, Codec.STRING),
@@ -1334,6 +1366,8 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                         (data, s) -> data.giveItem = s, data -> data.giveItem)
                 .addField(new KeyedCodec<>(KEY_COPY_ITEM_ID, Codec.STRING),
                         (data, s) -> data.copyItemId = s, data -> data.copyItemId)
+                .addField(new KeyedCodec<>(KEY_TOGGLE_KEYBIND, Codec.BOOLEAN),
+                        (data, b) -> data.toggleKeybind = b, data -> data.toggleKeybind)
                 .build();
 
         private String searchQuery;
@@ -1344,6 +1378,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         private String usagePageChange;
         private String giveItem;
         private String copyItemId;
+        private Boolean toggleKeybind;
     }
 
     private static class SearchResult {
