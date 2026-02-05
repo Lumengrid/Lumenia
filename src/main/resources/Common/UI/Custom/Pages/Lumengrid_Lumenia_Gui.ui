@@ -13,14 +13,43 @@ $C.@PageOverlay {
 
         $C.@HeaderSearch {}
 
-        Group #KeybindSettings {
+        Group #HeaderControls {
           LayoutMode: Left;
-          Padding: (Top: 5, Left: 20, Right: 10);
+          Padding: (Top: 5, Left: 10, Right: 10);
           Anchor: (Height: 30);
 
-          $C.@CheckBoxWithLabel #EnableKeybindCheckbox {
-            @Text = "Enable keybind";
-            Anchor: (Height: 20);
+          Group #KeybindSettings {
+            LayoutMode: Left;
+            Padding: (Right: 10);
+
+            $C.@CheckBoxWithLabel #EnableKeybindCheckbox {
+              @Text = "Enable keybind";
+              Anchor: (Height: 20);
+            }
+          }
+
+          Group {
+            FlexWeight: 1;
+          }
+
+          Group {
+            LayoutMode: Left;
+            Padding: (Left: 10, Right: 240, Bottom: 5);
+
+            Label {
+              Style: (
+                FontSize: 13,
+                TextColor: #aaaaaa,
+                VerticalAlignment: Center
+              );
+              Text: "Mod:";
+              Padding: (Right: 5);
+            }
+
+            $C.@DropdownBox #ModFilterDropdown {
+              Anchor: (Width: 200, Height: 22);
+              Style: @DefaultDropdownBoxStyle;
+            }
           }
         }
       }

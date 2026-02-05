@@ -28,6 +28,8 @@ import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCu
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.modules.i18n.I18nModule;
+import com.hypixel.hytale.server.core.ui.DropdownEntryInfo;
+import com.hypixel.hytale.server.core.ui.LocalizableString;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -57,6 +59,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
     private int usagePage = 0;
     private static final int CRAFT_RECIPES_PER_PAGE = 1;
     private static final int USAGE_RECIPES_PER_PAGE = 1;
+    private String selectedModFilter = ""; // Empty string means "All Mods"
 
 
     public JEIGui(@Nonnull PlayerRef playerRef, @Nonnull CustomPageLifetime lifetime, String defaultSearchQuery) {
@@ -90,19 +93,27 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#SearchInput",
                 EventData.of("@SearchQuery", "#SearchInput.Value"), false);
 
-        boolean pluginKeybindEnabled = Lumenia.getInstance().config.get().defaultOpenJeiKeybind;
-        if (pluginKeybindEnabled) {
-            uiCommandBuilder.set("#Title #KeybindSettings.Visible", true);
+        // Build mod filter dropdown
+        this.buildModFilterDropdown(ref, uiCommandBuilder, uiEventBuilder, store);
+
+        // Only show checkbox if global config enables the keybind feature
+        boolean globalKeybindEnabled = Lumenia.getInstance().config.get().defaultOpenJeiKeybind;
+        if (globalKeybindEnabled) {
+            // Feature is enabled globally - show checkbox and allow per-player opt-out
             LumeniaComponent component = store.getComponent(ref, LumeniaComponent.getComponentType());
-            boolean playerKeybindEnabled = true;
+            // If component exists and player has opted out, checkbox is false
+            // If component doesn't exist or player hasn't opted out, checkbox is true (uses global default)
+            boolean playerKeybindEnabled = true; // Default to enabled (uses global)
             if (component != null) {
                 playerKeybindEnabled = component.openJeiKeybind;
             }
-            uiCommandBuilder.set("#Title #KeybindSettings #EnableKeybindCheckbox #CheckBox.Value", playerKeybindEnabled);
-            uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#Title #KeybindSettings #EnableKeybindCheckbox #CheckBox",
-                    EventData.of(GuiData.KEY_TOGGLE_KEYBIND, "#Title #KeybindSettings #EnableKeybindCheckbox #CheckBox.Value"), false);
+            uiCommandBuilder.set("#Title #HeaderControls #KeybindSettings.Visible", true);
+            uiCommandBuilder.set("#Title #HeaderControls #KeybindSettings #EnableKeybindCheckbox #CheckBox.Value", playerKeybindEnabled);
+            uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#Title #HeaderControls #KeybindSettings #EnableKeybindCheckbox #CheckBox",
+                    EventData.of(GuiData.KEY_TOGGLE_KEYBIND, "#Title #HeaderControls #KeybindSettings #EnableKeybindCheckbox #CheckBox.Value"), false);
         } else {
-            uiCommandBuilder.set("#Title #KeybindSettings.Visible", false);
+            // Feature is disabled globally - hide checkbox
+            uiCommandBuilder.set("#Title #HeaderControls #KeybindSettings.Visible", false);
         }
 
         // Build item grid and recipe panel - the search query is already set, so filtering will happen
@@ -123,6 +134,15 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         if (data.searchQuery != null) {
             this.searchQuery = data.searchQuery.trim().toLowerCase();
             this.currentPage = 0; // Reset to first page when searching
+            UICommandBuilder commandBuilder = new UICommandBuilder();
+            UIEventBuilder eventBuilder = new UIEventBuilder();
+            this.buildItemGrid(ref, commandBuilder, eventBuilder, store);
+            this.sendUpdate(commandBuilder, eventBuilder, false);
+        }
+
+        if (data.modFilter != null) {
+            this.selectedModFilter = data.modFilter;
+            this.currentPage = 0; // Reset to first page when filtering
             UICommandBuilder commandBuilder = new UICommandBuilder();
             UIEventBuilder eventBuilder = new UIEventBuilder();
             this.buildItemGrid(ref, commandBuilder, eventBuilder, store);
@@ -299,6 +319,106 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
 
     }
 
+    private void buildModFilterDropdown(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder commandBuilder,
+                                       @Nonnull UIEventBuilder eventBuilder, @Nonnull Store<EntityStore> store) {
+        List<DropdownEntryInfo> modEntries = new ArrayList<>();
+        
+        // Add "All Mods" option
+        modEntries.add(new DropdownEntryInfo(LocalizableString.fromString("All Mods"), ""));
+        
+        // Get all unique mods/namespaces from items
+        Set<String> modNames = new HashSet<>();
+        DefaultAssetMap<String, Item> assetMap = Item.getAssetMap();
+        
+        for (String itemId : Lumenia.ITEMS.keySet()) {
+            String modName = this.getModNameForItem(itemId, assetMap);
+            if (modName != null && !modName.isEmpty()) {
+                modNames.add(modName);
+            }
+        }
+        
+        // Sort mod names and add to dropdown
+        List<String> sortedModNames = new ArrayList<>(modNames);
+        sortedModNames.sort(String.CASE_INSENSITIVE_ORDER);
+        
+        for (String modName : sortedModNames) {
+            modEntries.add(new DropdownEntryInfo(LocalizableString.fromString(modName), modName));
+        }
+        
+        commandBuilder.set("#Title #HeaderControls #ModFilterDropdown.Entries", modEntries);
+        if (this.selectedModFilter != null) {
+            commandBuilder.set("#Title #HeaderControls #ModFilterDropdown.Value", this.selectedModFilter);
+        } else {
+            commandBuilder.set("#Title #HeaderControls #ModFilterDropdown.Value", "");
+        }
+        
+        eventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#Title #HeaderControls #ModFilterDropdown",
+                EventData.of(GuiData.KEY_MOD_FILTER, "#Title #HeaderControls #ModFilterDropdown.Value"), false);
+    }
+
+    private String getModNameForItem(String itemId, DefaultAssetMap<String, Item> assetMap) {
+        try {
+            if (assetMap == null) {
+                // Fallback: check namespace in itemId
+                int colonIndex = itemId.indexOf(':');
+                if (colonIndex > 0) {
+                    String namespace = itemId.substring(0, colonIndex);
+                    if (namespace.equalsIgnoreCase("core") || namespace.equalsIgnoreCase("hytale")) {
+                        return "Vanilla";
+                    }
+                    return namespace;
+                }
+                return "Vanilla";
+            }
+
+            // Get the pack name that contains this item
+            String packName = assetMap.getAssetPack(itemId);
+            if (packName == null || packName.isEmpty()) {
+                // Fallback: check namespace in itemId
+                int colonIndex = itemId.indexOf(':');
+                if (colonIndex > 0) {
+                    String namespace = itemId.substring(0, colonIndex);
+                    if (namespace.equalsIgnoreCase("core") || namespace.equalsIgnoreCase("hytale")) {
+                        return "Vanilla";
+                    }
+                    return namespace;
+                }
+                return "Vanilla";
+            }
+
+            // Get the AssetPack object
+            AssetPack pack = AssetModule.get().getAssetPack(packName);
+            if (pack == null) {
+                // Fallback to pack name
+                return packName;
+            }
+
+            // Check if it's the base pack (vanilla)
+            AssetPack basePack = AssetModule.get().getBaseAssetPack();
+            if (pack.equals(basePack)) {
+                return "Vanilla";
+            }
+
+            // Get the mod name from manifest
+            try {
+                PluginManifest manifest = pack.getManifest();
+                if (manifest != null) {
+                    String modName = manifest.getName();
+                    if (modName != null && !modName.isEmpty()) {
+                        return modName;
+                    }
+                }
+            } catch (Exception e) {
+                // Ignore manifest errors
+            }
+
+            // Fallback to pack name
+            return packName;
+        } catch (Exception e) {
+            return "Vanilla";
+        }
+    }
+
     private void buildItemGrid(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder commandBuilder,
                                @Nonnull UIEventBuilder eventBuilder, @Nonnull Store<EntityStore> store) {
         // Clear the grid first to remove old items
@@ -309,6 +429,19 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         Player playerComponent = componentAccessor.getComponent(ref, Player.getComponentType());
 
         assert playerComponent != null;
+
+        // Filter items by mod/namespace if a filter is selected
+        if (this.selectedModFilter != null && !this.selectedModFilter.isEmpty()) {
+            DefaultAssetMap<String, Item> assetMap = Item.getAssetMap();
+            Map<String, Item> filteredByMod = new HashMap<>();
+            for (Map.Entry<String, Item> entry : itemList.entrySet()) {
+                String modName = this.getModNameForItem(entry.getKey(), assetMap);
+                if (modName != null && modName.equals(this.selectedModFilter)) {
+                    filteredByMod.put(entry.getKey(), entry.getValue());
+                }
+            }
+            itemList = filteredByMod;
+        }
 
         // Filter items based on search query
         if (!this.searchQuery.isEmpty()) {
@@ -1348,6 +1481,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         static final String KEY_GIVE_ITEM = "GiveItem";
         static final String KEY_COPY_ITEM_ID = "CopyItemId";
         static final String KEY_TOGGLE_KEYBIND = "@ToggleKeybind";
+        static final String KEY_MOD_FILTER = "@ModFilter";
 
         public static final BuilderCodec<GuiData> CODEC = BuilderCodec.<GuiData>builder(GuiData.class, GuiData::new)
                 .addField(new KeyedCodec<>(KEY_SEARCH_QUERY, Codec.STRING),
@@ -1368,6 +1502,8 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                         (data, s) -> data.copyItemId = s, data -> data.copyItemId)
                 .addField(new KeyedCodec<>(KEY_TOGGLE_KEYBIND, Codec.BOOLEAN),
                         (data, b) -> data.toggleKeybind = b, data -> data.toggleKeybind)
+                .addField(new KeyedCodec<>(KEY_MOD_FILTER, Codec.STRING),
+                        (data, s) -> data.modFilter = s, data -> data.modFilter)
                 .build();
 
         private String searchQuery;
@@ -1379,6 +1515,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         private String giveItem;
         private String copyItemId;
         private Boolean toggleKeybind;
+        private String modFilter;
     }
 
     private static class SearchResult {
