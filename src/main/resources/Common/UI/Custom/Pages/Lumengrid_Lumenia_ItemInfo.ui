@@ -156,6 +156,75 @@ Group #RecipePanel {
         LayoutMode: Top;
       }
     }
+
+    Group #DropsSection {
+      Visible: false;
+      LayoutMode: Top;
+      Padding: (Top: 15);
+
+      Label {
+        Style: (
+          FontSize: 16,
+          TextColor: #ffffff,
+          RenderBold: true
+        );
+        Text: "Dropped By:";
+        Padding: (Bottom: 8);
+      }
+
+      Group #DropsPaginationControls {
+        LayoutMode: Left;
+        Padding: (Bottom: 10);
+        Anchor: (Height: 50);
+        Visible: false;
+
+        TextButton #DropsPrevPageButton {
+          Anchor: (Width: 70, Height: 35);
+          Text: "Prev";
+          Style: TextButtonStyle(
+            Default: (LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true)),
+            Hovered: (Background: #3a3a3a(0.9)),
+            Pressed: (Background: #4a4a4a(1.0)),
+            Sounds: $C.@ButtonSounds
+          );
+          Background: #2a2a2a(0.6);
+          Padding: (Full: 8);
+        }
+
+        Label #DropsPaginationInfo {
+          FlexWeight: 1;
+          Text: "1 of 1";
+          Style: (
+            FontSize: 14,
+            TextColor: #ffffff,
+            HorizontalAlignment: Center,
+            VerticalAlignment: Center,
+          );
+          Background: #2a2a2a(0.6);
+          Padding: (Full: 8);
+          Anchor: (Left: 10, Right: 10);
+        }
+
+        TextButton #DropsNextPageButton {
+          Anchor: (Width: 70, Height: 35);
+          Text: "Next";
+          Style: TextButtonStyle(
+            Default: (LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true)),
+            Hovered: (Background: #3a3a3a(0.9)),
+            Pressed: (Background: #4a4a4a(1.0)),
+            Sounds: $C.@ButtonSounds
+          );
+          Background: #2a2a2a(0.6);
+          Padding: (Full: 8);
+        }
+      }
+
+      Group #DropsList {
+        LayoutMode: Top;
+        Padding: (Full: 8);
+        Background: (Color: #1a1a1a(0.7));
+      }
+    }
   }
 
   Group #PaginationControls {
@@ -246,6 +315,7 @@ Group #RecipePanel {
       FlexWeight: 1;
     }
   }
+
 
   Label #NoRecipes {
     Visible: false;

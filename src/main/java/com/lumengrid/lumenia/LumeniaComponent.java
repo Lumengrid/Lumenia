@@ -12,6 +12,7 @@ import javax.annotation.Nullable;
 public class LumeniaComponent implements Component<EntityStore> {
     public static final BuilderCodec<LumeniaComponent> CODEC;
     public boolean openJeiKeybind = true;
+    public String jeiKeybind = "crouching"; // "walking", "crouching", "running"
     public boolean wasWalkingLastTick = false;
 
     public static ComponentType<EntityStore, LumeniaComponent> getComponentType() {
@@ -20,16 +21,23 @@ public class LumeniaComponent implements Component<EntityStore> {
 
     private LumeniaComponent() {
         this.openJeiKeybind = Lumenia.getInstance().config.get().defaultOpenJeiKeybind;
+        this.jeiKeybind = "crouching";
     }
 
-    public LumeniaComponent(boolean openJeiKeybind) {;
+    public LumeniaComponent(boolean openJeiKeybind) {
         this.openJeiKeybind = openJeiKeybind;
+        this.jeiKeybind = "crouching";
+    }
+
+    public LumeniaComponent(boolean openJeiKeybind, String jeiKeybind) {
+        this.openJeiKeybind = openJeiKeybind;
+        this.jeiKeybind = jeiKeybind != null ? jeiKeybind : "crouching";
     }
 
     @Nullable
     @Override
     public Component<EntityStore> clone() {
-        LumeniaComponent clone = new LumeniaComponent(this.openJeiKeybind);
+        LumeniaComponent clone = new LumeniaComponent(this.openJeiKeybind, this.jeiKeybind);
         clone.wasWalkingLastTick = this.wasWalkingLastTick;
         return clone;
     }
@@ -39,6 +47,10 @@ public class LumeniaComponent implements Component<EntityStore> {
                 .append(new KeyedCodec<>("OpenJeiKeybind", Codec.BOOLEAN),
                         (o, v) -> o.openJeiKeybind = v,
                         (o) -> o.openJeiKeybind)
+                .add()
+                .append(new KeyedCodec<>("JeiKeybind", Codec.STRING),
+                        (o, v) -> o.jeiKeybind = v != null ? v : "crouching",
+                        (o) -> o.jeiKeybind != null ? o.jeiKeybind : "crouching")
                 .add()
                 .build();
     }

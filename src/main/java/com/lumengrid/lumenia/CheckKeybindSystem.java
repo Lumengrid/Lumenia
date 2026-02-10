@@ -43,23 +43,33 @@ public class CheckKeybindSystem extends EntityTickingSystem<EntityStore> {
 
             MovementStates movementStates = statesComponent.getMovementStates();
 
-            if (movementStates.walking) {
-                boolean pageOpen = player.getPageManager().getCustomPage() != null;
-                boolean pluginKeybindEnabled = Lumenia.getInstance().config.get().defaultOpenJeiKeybind;
-                if (!pluginKeybindEnabled) {
-                    return;
-                }
+            boolean pageOpen = player.getPageManager().getCustomPage() != null;
+            boolean pluginKeybindEnabled = Lumenia.getInstance().config.get().defaultOpenJeiKeybind;
+            if (!pluginKeybindEnabled) {
+                return;
+            }
 
-                LumeniaComponent component = store.getComponent(ref, LumeniaComponent.getComponentType());
-                boolean playerKeybindEnabled = true;
-                if (component != null) {
-                    playerKeybindEnabled = component.openJeiKeybind;
-                } else {
-                    component = new LumeniaComponent(true);
-                    commandBuffer.addComponent(ref, LumeniaComponent.getComponentType(), component);
+            LumeniaComponent component = store.getComponent(ref, LumeniaComponent.getComponentType());
+            boolean playerKeybindEnabled = true;
+            String selectedKeybind = "crouching"; // Default
+            if (component != null) {
+                playerKeybindEnabled = component.openJeiKeybind;
+                selectedKeybind = component.jeiKeybind != null ? component.jeiKeybind : "crouching";
+            } else {
+                component = new LumeniaComponent(true, "crouching");
+                commandBuffer.addComponent(ref, LumeniaComponent.getComponentType(), component);
+            }
+            
+            if (!pageOpen && playerKeybindEnabled) {
+                // Check if the selected keybind is active
+                boolean keybindActive = false;
+                if ("walking".equals(selectedKeybind)) {
+                    keybindActive = movementStates.walking;
+                } else if ("crouching".equals(selectedKeybind)) {
+                    keybindActive = movementStates.crouching;
                 }
                 
-                if (!pageOpen && playerKeybindEnabled) {
+                if (keybindActive) {
                     try {
                         PageManager pageManager = player.getPageManager();
                         if (pageManager.getCustomPage() == null) {

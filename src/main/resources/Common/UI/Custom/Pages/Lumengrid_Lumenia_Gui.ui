@@ -26,6 +26,21 @@ $C.@PageOverlay {
               @Text = "Enable keybind";
               Anchor: (Height: 20);
             }
+
+            Label {
+              Style: (
+                FontSize: 13,
+                TextColor: #aaaaaa,
+                VerticalAlignment: Center
+              );
+              Text: "Key:";
+              Padding: (Left: 10, Right: 5);
+            }
+
+            $C.@DropdownBox #KeybindDropdown {
+              Anchor: (Width: 120, Height: 22);
+              Style: @DefaultDropdownBoxStyle;
+            }
           }
 
           Group {

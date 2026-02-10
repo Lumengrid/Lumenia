@@ -37,6 +37,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.lumengrid.lumenia.Lumenia;
 import com.lumengrid.lumenia.LumeniaComponent;
+import com.lumengrid.lumenia.MobDropInfo;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 import javax.annotation.Nonnull;
@@ -57,8 +58,10 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
     private String activeSection = "info";
     private int craftPage = 0;
     private int usagePage = 0;
+    private int dropsPage = 0;
     private static final int CRAFT_RECIPES_PER_PAGE = 1;
     private static final int USAGE_RECIPES_PER_PAGE = 1;
+    private static final int DROPS_PER_PAGE = 3;
     private String selectedModFilter = ""; // Empty string means "All Mods"
 
 
@@ -104,13 +107,18 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             // If component exists and player has opted out, checkbox is false
             // If component doesn't exist or player hasn't opted out, checkbox is true (uses global default)
             boolean playerKeybindEnabled = true; // Default to enabled (uses global)
+            String playerKeybind = "crouching"; // Default keybind
             if (component != null) {
                 playerKeybindEnabled = component.openJeiKeybind;
+                playerKeybind = component.jeiKeybind != null ? component.jeiKeybind : "crouching";
             }
             uiCommandBuilder.set("#Title #HeaderControls #KeybindSettings.Visible", true);
             uiCommandBuilder.set("#Title #HeaderControls #KeybindSettings #EnableKeybindCheckbox #CheckBox.Value", playerKeybindEnabled);
             uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#Title #HeaderControls #KeybindSettings #EnableKeybindCheckbox #CheckBox",
                     EventData.of(GuiData.KEY_TOGGLE_KEYBIND, "#Title #HeaderControls #KeybindSettings #EnableKeybindCheckbox #CheckBox.Value"), false);
+            
+            // Build keybind dropdown
+            this.buildKeybindDropdown(ref, uiCommandBuilder, uiEventBuilder, store, playerKeybind);
         } else {
             // Feature is disabled globally - hide checkbox
             uiCommandBuilder.set("#Title #HeaderControls #KeybindSettings.Visible", false);
@@ -149,16 +157,19 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             this.sendUpdate(commandBuilder, eventBuilder, false);
         }
 
+
         if (data.selectedItem != null && !data.selectedItem.isEmpty()) {
             // Reset pagination when selecting a new item
             if (!data.selectedItem.equals(this.selectedItem)) {
                 this.craftPage = 0;
                 this.usagePage = 0;
+                this.dropsPage = 0;
             }
             this.selectedItem = data.selectedItem;
             this.activeSection = "info";
             this.craftPage = 0;
             this.usagePage = 0;
+            this.dropsPage = 0;
 
             UICommandBuilder commandBuilder = new UICommandBuilder();
             commandBuilder.set("#RecipePanel #PaginationControls.Visible", false);
@@ -242,6 +253,24 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             this.sendUpdate(commandBuilder, eventBuilder, false);
         }
 
+        if (data.dropsPageChange != null && this.selectedItem != null && !this.selectedItem.isEmpty()) {
+            Map<String, MobDropInfo> itemDrops = Lumenia.MOB_LOOT.get(this.selectedItem);
+            if (itemDrops != null && !itemDrops.isEmpty()) {
+                List<Map.Entry<String, MobDropInfo>> dropsList = new ArrayList<>(itemDrops.entrySet());
+                int totalDropsPages = (int) Math.ceil((double) dropsList.size() / DROPS_PER_PAGE);
+                if ("prev".equals(data.dropsPageChange) && this.dropsPage > 0) {
+                    this.dropsPage--;
+                } else if ("next".equals(data.dropsPageChange) && this.dropsPage < totalDropsPages - 1) {
+                    this.dropsPage++;
+                }
+
+                UICommandBuilder commandBuilder = new UICommandBuilder();
+                UIEventBuilder eventBuilder = new UIEventBuilder();
+                this.buildDropsSection(ref, commandBuilder, eventBuilder, store, this.selectedItem);
+                this.sendUpdate(commandBuilder, eventBuilder, false);
+            }
+        }
+
         if (data.giveItem != null && !data.giveItem.isEmpty()) {
             this.sendUpdate(new UICommandBuilder(), new UIEventBuilder(), false);
             if (!ref.isValid()) {
@@ -312,11 +341,62 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 component.openJeiKeybind = data.toggleKeybind;
             } else {
                 // Create component if it doesn't exist
-                component = new LumeniaComponent(data.toggleKeybind);
+                component = new LumeniaComponent(data.toggleKeybind, "crouching");
+                store.addComponent(ref, LumeniaComponent.getComponentType(), component);
+            }
+            
+            // Update dropdown visibility
+            UICommandBuilder commandBuilder = new UICommandBuilder();
+            UIEventBuilder eventBuilder = new UIEventBuilder();
+            String currentKeybind = component != null && component.jeiKeybind != null ? component.jeiKeybind : "walking";
+            this.buildKeybindDropdown(ref, commandBuilder, eventBuilder, store, currentKeybind);
+            this.sendUpdate(commandBuilder, eventBuilder, false);
+        }
+
+        if (data.keybindSelection != null && !data.keybindSelection.isEmpty()) {
+            if (!ref.isValid()) {
+                return;
+            }
+
+            // Update the player's component with the new keybind selection
+            LumeniaComponent component = store.getComponent(ref, LumeniaComponent.getComponentType());
+            if (component != null) {
+                component.jeiKeybind = data.keybindSelection;
+            } else {
+                // Create component if it doesn't exist
+                boolean keybindEnabled = Lumenia.getInstance().config.get().defaultOpenJeiKeybind;
+                component = new LumeniaComponent(keybindEnabled, data.keybindSelection != null ? data.keybindSelection : "crouching");
                 store.addComponent(ref, LumeniaComponent.getComponentType(), component);
             }
         }
 
+    }
+
+    private void buildKeybindDropdown(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder commandBuilder,
+                                     @Nonnull UIEventBuilder eventBuilder, @Nonnull Store<EntityStore> store,
+                                     String currentKeybind) {
+        List<DropdownEntryInfo> keybindEntries = new ArrayList<>();
+        
+        // Add available keybind options
+        keybindEntries.add(new DropdownEntryInfo(LocalizableString.fromString("Walk"), "walking"));
+        keybindEntries.add(new DropdownEntryInfo(LocalizableString.fromString("Crouch"), "crouching"));
+        
+        commandBuilder.set("#Title #HeaderControls #KeybindSettings #KeybindDropdown.Entries", keybindEntries);
+        // Ensure current keybind is valid, default to "crouching" if not
+        String validKeybind = currentKeybind != null && (currentKeybind.equals("walking") || currentKeybind.equals("crouching")) 
+                ? currentKeybind : "crouching";
+        commandBuilder.set("#Title #HeaderControls #KeybindSettings #KeybindDropdown.Value", validKeybind);
+        
+        // Show dropdown only if keybind is enabled
+        LumeniaComponent component = store.getComponent(ref, LumeniaComponent.getComponentType());
+        boolean keybindEnabled = true;
+        if (component != null) {
+            keybindEnabled = component.openJeiKeybind;
+        }
+        commandBuilder.set("#Title #HeaderControls #KeybindSettings #KeybindDropdown.Visible", keybindEnabled);
+        
+        eventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#Title #HeaderControls #KeybindSettings #KeybindDropdown",
+                EventData.of(GuiData.KEY_KEYBIND_SELECTION, "#Title #HeaderControls #KeybindSettings #KeybindDropdown.Value"), false);
     }
 
     private void buildModFilterDropdown(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder commandBuilder,
@@ -650,6 +730,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         this.activeSection = "info";
         this.craftPage = 0;
         this.usagePage = 0;
+        this.dropsPage = 0;
 
         commandBuilder.set("#RecipePanel #UsageSection.Visible", false);
         commandBuilder.set("#RecipePanel #CraftSection.Visible", false);
@@ -818,10 +899,130 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             commandBuilder.set("#RecipePanel #InfoSection #ItemPropertiesInfo #ItemPropertiesList[" + propIndex + "].Text", "Is Armor: " + this.formatBoolean(item.getArmor() != null));
             propIndex++;
         }
+
+        // Build drops section if item has drops
+        Map<String, MobDropInfo> itemDrops = Lumenia.MOB_LOOT.get(this.selectedItem);
+        if (itemDrops != null && !itemDrops.isEmpty()) {
+            this.buildDropsSection(ref, commandBuilder, eventBuilder, store, this.selectedItem);
+        } else {
+            commandBuilder.set("#RecipePanel #InfoSection #DropsSection.Visible", false);
+        }
     }
 
     private String formatBoolean(boolean value) {
         return value ? "true" : "false";
+    }
+
+    private void buildDropsSection(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder commandBuilder,
+                                   @Nonnull UIEventBuilder eventBuilder, @Nonnull Store<EntityStore> store,
+                                   String itemId) {
+        Map<String, MobDropInfo> itemDrops = Lumenia.MOB_LOOT.get(itemId);
+        
+        if (itemDrops == null || itemDrops.isEmpty()) {
+            commandBuilder.set("#RecipePanel #InfoSection #DropsSection.Visible", false);
+            return;
+        }
+
+        commandBuilder.set("#RecipePanel #InfoSection #DropsSection.Visible", true);
+        commandBuilder.clear("#RecipePanel #InfoSection #DropsSection #DropsList");
+
+        // Convert to list for pagination and sort by translation key
+        List<Map.Entry<String, MobDropInfo>> dropsList = new ArrayList<>(itemDrops.entrySet());
+        dropsList.sort((a, b) -> {
+            try {
+                String nameA = I18nModule.get().getMessage(this.playerRef.getLanguage(), a.getValue().roleTranslationKey);
+                String nameB = I18nModule.get().getMessage(this.playerRef.getLanguage(), b.getValue().roleTranslationKey);
+                if (nameA == null) nameA = a.getValue().roleTranslationKey;
+                if (nameB == null) nameB = b.getValue().roleTranslationKey;
+                return nameA.compareToIgnoreCase(nameB);
+            } catch (Exception e) {
+                return a.getValue().roleTranslationKey.compareToIgnoreCase(b.getValue().roleTranslationKey);
+            }
+        });
+        
+        int totalDropsPages = (int) Math.ceil((double) dropsList.size() / DROPS_PER_PAGE);
+        if (this.dropsPage >= totalDropsPages && totalDropsPages > 0) {
+            this.dropsPage = totalDropsPages - 1;
+        }
+        if (this.dropsPage < 0) {
+            this.dropsPage = 0;
+        }
+
+        int startIndex = this.dropsPage * DROPS_PER_PAGE;
+        int endIndex = Math.min(startIndex + DROPS_PER_PAGE, dropsList.size());
+        List<Map.Entry<String, MobDropInfo>> pageDrops = dropsList.subList(startIndex, endIndex);
+
+        // Update pagination controls
+        if (totalDropsPages > 1) {
+            commandBuilder.set("#RecipePanel #InfoSection #DropsSection #DropsPaginationControls.Visible", true);
+            commandBuilder.set("#RecipePanel #InfoSection #DropsSection #DropsPaginationControls #DropsPaginationInfo.Text", 
+                    (this.dropsPage + 1) + " / " + totalDropsPages);
+            
+            eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, 
+                    "#RecipePanel #InfoSection #DropsSection #DropsPaginationControls #DropsPrevPageButton",
+                    EventData.of(GuiData.KEY_DROPS_PAGE_CHANGE, "prev"), false);
+            eventBuilder.addEventBinding(CustomUIEventBindingType.Activating, 
+                    "#RecipePanel #InfoSection #DropsSection #DropsPaginationControls #DropsNextPageButton",
+                    EventData.of(GuiData.KEY_DROPS_PAGE_CHANGE, "next"), false);
+        } else {
+            commandBuilder.set("#RecipePanel #InfoSection #DropsSection #DropsPaginationControls.Visible", false);
+        }
+
+        // Display drops for current page
+        int dropIndex = 0;
+        for (Map.Entry<String, MobDropInfo> entry : pageDrops) {
+            MobDropInfo dropInfo = entry.getValue();
+            String roleId = dropInfo.roleId;
+            String roleTranslationKey = dropInfo.roleTranslationKey;
+            String modelId = dropInfo.modelId;
+            Map.Entry<Integer, Integer> quantities = dropInfo.quantities;
+            int min = quantities.getKey();
+            int max = quantities.getValue();
+            
+            String quantityText;
+            if (min == max) {
+                quantityText = "x" + min;
+            } else {
+                quantityText = "x" + min + " - " + max;
+            }
+
+            // Create entry for each drop
+            String dropEntrySelector = "#RecipePanel #InfoSection #DropsSection #DropsList[" + dropIndex + "]";
+            commandBuilder.appendInline("#RecipePanel #InfoSection #DropsSection #DropsList", 
+                    "Group { LayoutMode: Top; Padding: (Full: 8, Bottom: 10); }");
+            
+            // First row: Mob name and quantity on the same line
+            String nameRowSelector = dropEntrySelector + "[0]";
+            commandBuilder.appendInline(dropEntrySelector, 
+                    "Group { LayoutMode: Left; Anchor: (Height: 24); }");
+
+            // Mob name (using translation key) - takes available space
+            commandBuilder.appendInline(nameRowSelector, 
+                    "Label { FlexWeight: 1; Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center); }");
+            commandBuilder.set(nameRowSelector + "[0].TextSpans", 
+                    Message.translation(roleTranslationKey));
+            
+            // Quantity on the same row
+            commandBuilder.appendInline(nameRowSelector,
+                    "Label { Style: (FontSize: 13, TextColor: #4a9eff, VerticalAlignment: Center); Padding: (Left: 10); }");
+            commandBuilder.set(nameRowSelector + "[1].Text", quantityText);
+
+            // Second row: Mob ID (role ID, not translation key)
+            String mobIdSelector = dropEntrySelector + "[1]";
+            commandBuilder.appendInline(dropEntrySelector,
+                    "Label { Style: (FontSize: 12, TextColor: #888888, VerticalAlignment: Center); Padding: (Top: 2); }");
+            commandBuilder.set(mobIdSelector + ".Text", roleId);
+            
+            // Optional: Show model ID if available (third row)
+            if (modelId != null && !modelId.isEmpty()) {
+                String modelIdSelector = dropEntrySelector + "[2]";
+                commandBuilder.appendInline(dropEntrySelector,
+                        "Label { Style: (FontSize: 11, TextColor: #666666, VerticalAlignment: Center); Padding: (Top: 2); }");
+                commandBuilder.set(modelIdSelector + ".Text", "Model: " + modelId);
+            }
+            
+            dropIndex++;
+        }
     }
 
     private void buildCraftSection(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder commandBuilder,
@@ -917,6 +1118,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             }
         }
     }
+
 
     private List<String> getValidCraftRecipes(List<String> recipeIds) {
         List<String> validRecipeIds = new ArrayList<>();
@@ -1478,9 +1680,11 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         static final String KEY_ACTIVE_SECTION = "ActiveSection";
         static final String KEY_CRAFT_PAGE_CHANGE = "CraftPageChange";
         static final String KEY_USAGE_PAGE_CHANGE = "UsagePageChange";
+        static final String KEY_DROPS_PAGE_CHANGE = "DropsPageChange";
         static final String KEY_GIVE_ITEM = "GiveItem";
         static final String KEY_COPY_ITEM_ID = "CopyItemId";
         static final String KEY_TOGGLE_KEYBIND = "@ToggleKeybind";
+        static final String KEY_KEYBIND_SELECTION = "@KeybindSelection";
         static final String KEY_MOD_FILTER = "@ModFilter";
 
         public static final BuilderCodec<GuiData> CODEC = BuilderCodec.<GuiData>builder(GuiData.class, GuiData::new)
@@ -1496,12 +1700,16 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                         (data, s) -> data.craftPageChange = s, data -> data.craftPageChange)
                 .addField(new KeyedCodec<>(KEY_USAGE_PAGE_CHANGE, Codec.STRING),
                         (data, s) -> data.usagePageChange = s, data -> data.usagePageChange)
+                .addField(new KeyedCodec<>(KEY_DROPS_PAGE_CHANGE, Codec.STRING),
+                        (data, s) -> data.dropsPageChange = s, data -> data.dropsPageChange)
                 .addField(new KeyedCodec<>(KEY_GIVE_ITEM, Codec.STRING),
                         (data, s) -> data.giveItem = s, data -> data.giveItem)
                 .addField(new KeyedCodec<>(KEY_COPY_ITEM_ID, Codec.STRING),
                         (data, s) -> data.copyItemId = s, data -> data.copyItemId)
                 .addField(new KeyedCodec<>(KEY_TOGGLE_KEYBIND, Codec.BOOLEAN),
                         (data, b) -> data.toggleKeybind = b, data -> data.toggleKeybind)
+                .addField(new KeyedCodec<>(KEY_KEYBIND_SELECTION, Codec.STRING),
+                        (data, s) -> data.keybindSelection = s, data -> data.keybindSelection)
                 .addField(new KeyedCodec<>(KEY_MOD_FILTER, Codec.STRING),
                         (data, s) -> data.modFilter = s, data -> data.modFilter)
                 .build();
@@ -1512,9 +1720,11 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         private String activeSection;
         private String craftPageChange;
         private String usagePageChange;
+        private String dropsPageChange;
         private String giveItem;
         private String copyItemId;
         private Boolean toggleKeybind;
+        private String keybindSelection;
         private String modFilter;
     }
 
