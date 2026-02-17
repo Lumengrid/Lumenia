@@ -51,12 +51,12 @@ public class CheckKeybindSystem extends EntityTickingSystem<EntityStore> {
 
             LumeniaComponent component = store.getComponent(ref, LumeniaComponent.getComponentType());
             boolean playerKeybindEnabled = true;
-            String selectedKeybind = "crouching"; // Default
+            String selectedKeybind = "walking"; // Default
             if (component != null) {
                 playerKeybindEnabled = component.openJeiKeybind;
-                selectedKeybind = component.jeiKeybind != null ? component.jeiKeybind : "crouching";
+                selectedKeybind = component.jeiKeybind != null ? component.jeiKeybind : "walking";
             } else {
-                component = new LumeniaComponent(true, "crouching");
+                component = new LumeniaComponent(true, "walking");
                 commandBuffer.addComponent(ref, LumeniaComponent.getComponentType(), component);
             }
             

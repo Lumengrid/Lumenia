@@ -107,10 +107,10 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             // If component exists and player has opted out, checkbox is false
             // If component doesn't exist or player hasn't opted out, checkbox is true (uses global default)
             boolean playerKeybindEnabled = true; // Default to enabled (uses global)
-            String playerKeybind = "crouching"; // Default keybind
+            String playerKeybind = "walking"; // Default keybind
             if (component != null) {
                 playerKeybindEnabled = component.openJeiKeybind;
-                playerKeybind = component.jeiKeybind != null ? component.jeiKeybind : "crouching";
+                playerKeybind = component.jeiKeybind != null ? component.jeiKeybind : "walking";
             }
             uiCommandBuilder.set("#Title #HeaderControls #KeybindSettings.Visible", true);
             uiCommandBuilder.set("#Title #HeaderControls #KeybindSettings #EnableKeybindCheckbox #CheckBox.Value", playerKeybindEnabled);
@@ -341,7 +341,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
                 component.openJeiKeybind = data.toggleKeybind;
             } else {
                 // Create component if it doesn't exist
-                component = new LumeniaComponent(data.toggleKeybind, "crouching");
+                component = new LumeniaComponent(data.toggleKeybind, "walking");
                 store.addComponent(ref, LumeniaComponent.getComponentType(), component);
             }
             
@@ -365,7 +365,7 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
             } else {
                 // Create component if it doesn't exist
                 boolean keybindEnabled = Lumenia.getInstance().config.get().defaultOpenJeiKeybind;
-                component = new LumeniaComponent(keybindEnabled, data.keybindSelection != null ? data.keybindSelection : "crouching");
+                component = new LumeniaComponent(keybindEnabled, data.keybindSelection != null ? data.keybindSelection : "walking");
                 store.addComponent(ref, LumeniaComponent.getComponentType(), component);
             }
         }
@@ -382,9 +382,9 @@ public class JEIGui extends InteractiveCustomUIPage<JEIGui.GuiData> {
         keybindEntries.add(new DropdownEntryInfo(LocalizableString.fromString("Crouch"), "crouching"));
         
         commandBuilder.set("#Title #HeaderControls #KeybindSettings #KeybindDropdown.Entries", keybindEntries);
-        // Ensure current keybind is valid, default to "crouching" if not
+        // Ensure current keybind is valid, default to "walking" if not
         String validKeybind = currentKeybind != null && (currentKeybind.equals("walking") || currentKeybind.equals("crouching")) 
-                ? currentKeybind : "crouching";
+                ? currentKeybind : "walking";
         commandBuilder.set("#Title #HeaderControls #KeybindSettings #KeybindDropdown.Value", validKeybind);
         
         // Show dropdown only if keybind is enabled

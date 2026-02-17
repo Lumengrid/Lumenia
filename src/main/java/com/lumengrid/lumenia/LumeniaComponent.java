@@ -12,7 +12,7 @@ import javax.annotation.Nullable;
 public class LumeniaComponent implements Component<EntityStore> {
     public static final BuilderCodec<LumeniaComponent> CODEC;
     public boolean openJeiKeybind = true;
-    public String jeiKeybind = "crouching"; // "walking", "crouching", "running"
+    public String jeiKeybind = "walking"; // "walking", "crouching"
     public boolean wasWalkingLastTick = false;
 
     public static ComponentType<EntityStore, LumeniaComponent> getComponentType() {
@@ -21,17 +21,17 @@ public class LumeniaComponent implements Component<EntityStore> {
 
     private LumeniaComponent() {
         this.openJeiKeybind = Lumenia.getInstance().config.get().defaultOpenJeiKeybind;
-        this.jeiKeybind = "crouching";
+        this.jeiKeybind = "walking";
     }
 
     public LumeniaComponent(boolean openJeiKeybind) {
         this.openJeiKeybind = openJeiKeybind;
-        this.jeiKeybind = "crouching";
+        this.jeiKeybind = "walking";
     }
 
     public LumeniaComponent(boolean openJeiKeybind, String jeiKeybind) {
         this.openJeiKeybind = openJeiKeybind;
-        this.jeiKeybind = jeiKeybind != null ? jeiKeybind : "crouching";
+        this.jeiKeybind = jeiKeybind != null ? jeiKeybind : "walking";
     }
 
     @Nullable
@@ -49,8 +49,8 @@ public class LumeniaComponent implements Component<EntityStore> {
                         (o) -> o.openJeiKeybind)
                 .add()
                 .append(new KeyedCodec<>("JeiKeybind", Codec.STRING),
-                        (o, v) -> o.jeiKeybind = v != null ? v : "crouching",
-                        (o) -> o.jeiKeybind != null ? o.jeiKeybind : "crouching")
+                        (o, v) -> o.jeiKeybind = v != null ? v : "walking",
+                        (o) -> o.jeiKeybind != null ? o.jeiKeybind : "walking")
                 .add()
                 .build();
     }
